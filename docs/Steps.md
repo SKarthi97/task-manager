@@ -254,6 +254,40 @@ flutter analyze     # No issues found!
 flutter test        # 6 tests passed
 ```
 
+## 11 — Add the `Task` model
+
+[`lib/models/task.dart`](../task_manager/lib/models/task.dart) describes what a single task *is*:
+
+```dart
+Task({required this.title, this.description, this.isCompleted = false});
+```
+
+| Property | Type | Required? |
+| --- | --- | --- |
+| `title` | `String` | yes |
+| `description` | `String?` — may be null | no |
+| `isCompleted` | `bool` | no, defaults to `false` |
+
+Nothing uses the model yet, so `flutter analyze` and the six tests stay green. It is the piece the
+task list will be built on next.
+
+## 12 — Stop the line-ending churn
+
+Every `pub get` left seven generated files under `linux/`, `macos/` and `windows/` showing as
+modified with **no content change at all**. Flutter writes them with LF endings; the Windows
+checkout rewrote them with CRLF.
+
+A repository-root [`.gitattributes`](../.gitattributes) fixes it:
+
+```gitattributes
+* text=auto eol=lf
+```
+
+```bash
+git add --renormalize .     # re-store existing files under the new rule
+git status                  # the phantom modifications are gone
+```
+
 ---
 
 # Concepts I learned
@@ -272,6 +306,9 @@ flutter test        # 6 tests passed
 | `Scaffold` | The standard screen frame, with slots to fill. |
 | Theme | The app's colours and fonts, set in one place. |
 | Widget test | A test that builds the screen in memory and checks what it shows. |
+| Model | A plain class that holds data, with no screen code in it. |
+| `String?` | A string that is allowed to be null (missing). |
+| `required` | The caller *must* pass this value. |
 
 ## Everything is a widget
 
@@ -481,21 +518,86 @@ lib/
 The `screens/`, `widgets/`, `models/` split is a convention people follow, not a rule the tools
 enforce — but following it means anyone can guess where a file lives.
 
+## A model is just data
+
+A **model** is a plain class describing one thing in the app — here, one task. It holds data and
+nothing else: no widgets, no `build`, not even an `import` of Flutter.
+
+That separation is the point. Because `Task` knows nothing about the screen, you can change the
+screen without touching it, and you can test it with a plain unit test — no widget tree needed.
+
+```text
+models/task.dart      what a task IS          (data)
+screens/home_screen   how tasks LOOK          (UI)
+```
+
+## `?` means "this can be null"
+
+In Dart, a normal type can never hold null. Adding `?` is you saying "this one is allowed to be
+missing":
+
+```dart
+String  title;        // must always have a value
+String? description;  // may be null
+```
+
+The payoff is that Dart then refuses to let you use `description` as a string until you have checked
+it, so the classic "null crash" is caught while you type rather than at runtime.
+
+## Named parameters, `required`, and defaults
+
+The braces in a constructor make the parameters **named** — callers pass them by name:
+
+```dart
+Task(title: 'Buy milk')                        // clear at the call site
+Task('Buy milk', null, false)                  // what positional would look like
+```
+
+Three things control each one:
+
+| Written as | Means |
+| --- | --- |
+| `required this.title` | must be provided |
+| `this.description` | optional, starts as null |
+| `this.isCompleted = false` | optional, starts as `false` |
+
+And `this.title` is shorthand: it takes the passed value and assigns it to the property of the same
+name, so there is no assignment line to write.
+
+## Line endings, and why files "changed" without changing
+
+Windows ends lines with two characters (CRLF); Linux and macOS use one (LF). Flutter, running in
+WSL, wrote the generated files with LF; the Windows side kept turning them back into CRLF. Git saw
+different bytes and reported the files as modified — even though not one character of content
+differed.
+
+`.gitattributes` settles it for everyone who clones the repo:
+
+```gitattributes
+* text=auto eol=lf     # store and check out text files with LF
+*.bat text eol=crlf    # except Windows scripts, which need CRLF
+*.png binary           # and never touch binary files
+```
+
+It belongs in the repository (unlike a personal `core.autocrlf` setting) so every machine behaves
+the same way.
+
 ---
 
 # Current state
 
 - The screen shows an orange app bar, an empty-state message (`No tasks yet`), and a disabled "+"
   button waiting to be wired up.
-- No task-manager functionality yet — there is no task model, no list, no saving.
+- A `Task` model exists but nothing uses it yet — there is no list and no saving.
 - `pubspec.yaml` carries the placeholder description `"A new Flutter project."` and no
   dependencies beyond `cupertino_icons` and `flutter_lints`.
 - The Android application ID is still the placeholder `com.example.task_manager`.
 
 # Next steps
 
-1. Install the Android SDK and register it with `flutter config --android-sdk <path>`.
-2. Update `pubspec.yaml` (description, and dependencies for state management + persistence).
-3. Replace the Android placeholder application ID.
-4. Build the task-manager feature itself: a `Task` model, a state layer, and list/add/edit UI,
-   extending the widget tests as each piece lands.
+1. Show a list of `Task`s on the screen, replacing the empty-state text when any exist.
+2. Make the "+" button add a task — this turns `HomeScreen` into a `StatefulWidget`.
+3. Add a unit test for `Task` (no widgets needed) alongside the widget tests.
+4. Install the Android SDK and register it with `flutter config --android-sdk <path>`.
+5. Update `pubspec.yaml` (description, and dependencies for state management + saving).
+6. Replace the Android placeholder application ID.
