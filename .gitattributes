@@ -1,0 +1,31 @@
+# ---------------------------------------------------------------------------
+# Line-ending rules.
+#
+# Without this, Git kept reporting the generated plugin-registrant files under
+# linux/, macos/ and windows/ as "modified" with no content change: Flutter
+# writes them with LF, Windows checkouts rewrite them with CRLF.
+#
+# `text=auto eol=lf` stores every text file with LF and checks it out with LF on
+# every platform, so the churn stops.
+# ---------------------------------------------------------------------------
+
+* text=auto eol=lf
+
+# Windows-only scripts that genuinely need CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files — never convert line endings, never try to diff as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.otf binary
+*.ttf binary
+*.jar binary
+*.keystore binary
+*.jks binary
+*.pdf binary
+*.zip binary
