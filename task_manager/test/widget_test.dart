@@ -10,9 +10,17 @@ import 'package:flutter_test/flutter_test.dart';
 // HomeScreen needs its own import: main.dart imports it rather than declaring
 // it, and Dart imports are not transitive.
 import 'package:task_manager/main.dart';
-import 'package:task_manager/models/task.dart';
 import 'package:task_manager/screens/home_screen.dart';
 import 'package:task_manager/widgets/task_tile.dart';
+
+// The starting tasks are private to _HomeScreenState now, so the tests cannot
+// read them. They are listed here instead — if the sample data changes, this
+// list changes with it.
+const List<String> initialTitles = <String>[
+  'Learn Flutter widgets',
+  'Build Task Manager app',
+  'Practice Dart',
+];
 
 void main() {
   group('TaskManagerApp', () {
@@ -29,15 +37,15 @@ void main() {
       await tester.pumpWidget(const TaskManagerApp());
 
       // findsNWidgets checks an exact count — one tile for each sample task.
-      expect(find.byType(TaskTile), findsNWidgets(HomeScreen.tasks.length));
+      expect(find.byType(TaskTile), findsNWidgets(initialTitles.length));
       expect(find.byType(ListView), findsOneWidget);
     });
 
     testWidgets('shows each task title', (WidgetTester tester) async {
       await tester.pumpWidget(const TaskManagerApp());
 
-      for (final Task task in HomeScreen.tasks) {
-        expect(find.text(task.title), findsOneWidget);
+      for (final String title in initialTitles) {
+        expect(find.text(title), findsOneWidget);
       }
     });
 
@@ -50,10 +58,10 @@ void main() {
         find.byType(Checkbox),
       );
 
-      expect(boxes.length, HomeScreen.tasks.length);
+      expect(boxes.length, initialTitles.length);
       for (final Checkbox box in boxes) {
         expect(box.value, isFalse); // isCompleted defaults to false
-        expect(box.onChanged, isNull); // disabled, like the "+" button
+        expect(box.onChanged, isNull); // still disabled
       }
     });
 
@@ -72,18 +80,44 @@ void main() {
       expect(find.byIcon(Icons.add), findsOneWidget);
     });
 
-    testWidgets('the add button is still disabled', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('the add button is enabled', (WidgetTester tester) async {
       await tester.pumpWidget(const TaskManagerApp());
 
       final FloatingActionButton fab = tester.widget(
         find.byType(FloatingActionButton),
       );
 
-      // onPressed: null is what makes a button disabled in Flutter. When adding
-      // a task is wired up, this test changes to check the tap does something.
-      expect(fab.onPressed, isNull);
+      // It has a function to run now, which is what enables a button.
+      expect(fab.onPressed, isNotNull);
+    });
+
+    testWidgets('tapping add appends a task to the list', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+      expect(find.byType(TaskTile), findsNWidgets(3));
+
+      // tap simulates the press; pump draws the frame that follows it. Without
+      // the pump, the test would still be looking at the pre-tap screen.
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pump();
+
+      expect(find.byType(TaskTile), findsNWidgets(4));
+      expect(find.text('Task 4'), findsOneWidget);
+    });
+
+    testWidgets('tapping add twice appends two tasks', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pump();
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pump();
+
+      expect(find.byType(TaskTile), findsNWidgets(5));
+      expect(find.text('Task 5'), findsOneWidget);
     });
 
     testWidgets('applies the orange seed colour scheme', (
