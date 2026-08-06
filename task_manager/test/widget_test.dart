@@ -1,30 +1,81 @@
-// This is a basic Flutter widget test.
+// Widget tests for the Task Manager app shell.
+// Concepts used here are explained in docs/Steps.md (Step 6).
 //
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Run with:  flutter test
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+// The app is imported as a package, using the `name:` from pubspec.yaml.
 import 'package:task_manager/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('TaskManagerApp', () {
+    // testWidgets (not test) builds a real widget tree, headlessly.
+    testWidgets('renders the app bar title', (WidgetTester tester) async {
+      // pumpWidget mounts the tree and renders one frame.
+      await tester.pumpWidget(const TaskManagerApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      // MaterialApp's title is OS metadata, so only the AppBar's Text matches.
+      expect(find.text('Task Manager'), findsOneWidget);
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    testWidgets('renders the centred welcome message', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+      expect(find.text('Welcome to Flutter!'), findsOneWidget);
+
+      // find.descendant also checks where the widget sits in the tree.
+      expect(
+        find.descendant(
+          of: find.byType(Center),
+          matching: find.text('Welcome to Flutter!'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('builds the expected Material scaffolding', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      expect(find.byType(MaterialApp), findsOneWidget);
+      expect(find.byType(HomeScreen), findsOneWidget);
+      expect(find.byType(Scaffold), findsOneWidget);
+      expect(find.byType(AppBar), findsOneWidget);
+
+      // Guards against the counter demo's button reappearing.
+      expect(find.byType(FloatingActionButton), findsNothing);
+    });
+
+    testWidgets('applies the orange seed colour scheme', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      // tester.element gives a BuildContext, which Theme.of needs.
+      final ThemeData theme = Theme.of(tester.element(find.byType(Scaffold)));
+
+      // fromSeed derives the palette, so primary is not orangeAccent itself —
+      // compare against a scheme built from the same seed.
+      expect(theme.colorScheme.brightness, Brightness.light);
+      expect(
+        theme.colorScheme.primary,
+        ColorScheme.fromSeed(seedColor: Colors.orangeAccent).primary,
+      );
+    });
+
+    testWidgets('hides the debug banner', (WidgetTester tester) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      // tester.widget returns the actual instance, so properties can be read.
+      final MaterialApp app = tester.widget(find.byType(MaterialApp));
+
+      expect(app.debugShowCheckedModeBanner, isFalse);
+      expect(app.title, 'Task Manager');
+    });
   });
 }
