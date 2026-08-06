@@ -1,7 +1,15 @@
-# Task Manager — Setup Steps
+# Task Manager — Learning Notes
 
-A running log of the setup steps performed for this project, with the exact commands,
-their relevant output, and notes on anything that needs follow-up.
+Notes kept while building this project, in two parts:
+
+1. [**Commands I ran**](#commands-i-ran) — the chronological log: each command, its relevant
+   output, and anything that needed following up.
+2. [**Concepts I learned**](#concepts-i-learned) — the Flutter and Dart ideas behind the code.
+
+Source files carry only brief comments and point back to the concepts section, so the explanations
+live in one place.
+
+## Environment
 
 - **Date:** 2026-08-06
 - **Host:** `LKCOL-WN-ENG-KarthickS` — WSL2, Ubuntu 24.04.1 LTS (kernel 5.15.167.4-microsoft-standard-WSL2)
@@ -12,18 +20,18 @@ their relevant output, and notes on anything that needs follow-up.
 
 ---
 
-## Step 1 — Verify the toolchain
+# Commands I ran
+
+## 1 — Verify the toolchain
 
 ```bash
 flutter doctor
 ```
 
-Summary of the result:
-
 | Check | Status | Notes |
 | --- | --- | --- |
 | Flutter (stable 3.44.8) | ✓ | Ubuntu 24.04.1 LTS on WSL2 |
-| Android toolchain | ✗ | **Android SDK not found** — see follow-up below |
+| Android toolchain | ✗ | **Android SDK not found** |
 | Chrome — web | ✓ | Google Chrome 151.0.7922.75 |
 | Linux toolchain — desktop | ✓ | Warning: `eglinfo` unavailable (`apt install mesa-utils`) |
 | Connected devices | ✓ | 2 available (Linux desktop, Chrome) |
@@ -44,9 +52,7 @@ The Android failure reported:
 > **Follow-up:** Android builds are blocked until the SDK is installed and registered with
 > `flutter config --android-sdk <path>`. Only Chrome (web) and Linux desktop can be targeted today.
 
----
-
-## Step 2 — Create the Flutter project
+## 2 — Create the Flutter project
 
 ```bash
 flutter create task_manager
@@ -64,12 +70,10 @@ All done!
 
 This produced the standard scaffold under [`task_manager/`](../task_manager/), including all six
 platform targets (`android`, `ios`, `linux`, `macos`, `web`, `windows`). Application code lives in
-[`task_manager/lib/main.dart`](../task_manager/lib/main.dart), which at this point is still the
+[`task_manager/lib/main.dart`](../task_manager/lib/main.dart), which at this point was still the
 default counter demo.
 
----
-
-## Step 3 — Run the app
+## 3 — Run the app
 
 ```bash
 cd task_manager/
@@ -100,7 +104,7 @@ WARNING: Falling back to CPU-only rendering. Reason: webGLVersion is -1
 > **Note:** The CPU-only rendering warning is expected under WSL2 without GPU passthrough. It affects
 > rendering performance in the browser only, not correctness of the build.
 
-### Hot reload key commands
+**Hot reload key commands**
 
 | Key | Action |
 | --- | --- |
@@ -111,16 +115,12 @@ WARNING: Falling back to CPU-only rendering. Reason: webGLVersion is -1
 | `c` | Clear the screen |
 | `q` | Quit (terminate the app on the device) |
 
-### Debug endpoints for this session
+**Debug endpoints** (port and auth token change on every run)
 
 - Dart VM Service: `http://127.0.0.1:45187/ZJ8F9sxP90c=`
 - DevTools: `http://127.0.0.1:45187/ZJ8F9sxP90c=/devtools/?uri=ws://127.0.0.1:45187/ZJ8F9sxP90c=/ws`
 
-(Port and auth token are per-session and change on every run.)
-
----
-
-## Step 4 — Add repository ignore rules
+## 4 — Add repository ignore rules
 
 A repository-root [`.gitignore`](../.gitignore) was added on top of the Flutter-generated
 [`task_manager/.gitignore`](../task_manager/.gitignore). It covers build output, IDE files, and
@@ -133,14 +133,10 @@ machine-specific or sensitive files:
 - Generated Xcode configs and per-platform `ephemeral/` directories
 - `.env` files (with `.env.example` kept)
 
----
-
-## Step 5 — Replace the counter demo with the app shell
+## 5 — Replace the counter demo with the app shell
 
 [`lib/main.dart`](../task_manager/lib/main.dart) was rewritten: the generated counter demo
-(97 lines) became a 15-line app shell. The source carries only brief one-line comments; the
-concepts behind them are explained here instead, and both `main.dart` and `widget_test.dart` point
-back to this document.
+(97 lines) became a 15-line app shell.
 
 | Before (`flutter create`) | After |
 | --- | --- |
@@ -152,57 +148,11 @@ back to this document.
 | Counter `Column` + `FloatingActionButton` | A single centred `Text` |
 | `_counter` field, `_incrementCounter()`, `setState` | No state |
 
-### Concepts this file demonstrates
+## 6 — Rewrite the widget test
 
-**Everything is a widget.** The UI is a *tree* of widgets, each describing a small piece of the
-screen. `runApp` takes the root widget and mounts it. Here the tree is:
-
-```text
-TaskManagerApp
-└── MaterialApp          app-wide plumbing: navigation, theme, localisation
-    └── HomeScreen
-        └── Scaffold     the standard Material screen layout
-            ├── AppBar   → Text('Task Manager')
-            └── Center   → Text('Welcome to Flutter!')
-```
-
-**Stateless vs stateful.** A `StatelessWidget` is a pure description of UI — same inputs, same
-output, nothing to mutate. A `StatefulWidget` owns a companion `State` object holding mutable
-fields, and calls `setState()` to tell Flutter to re-run `build`. The generated demo needed
-`StatefulWidget` for its `_counter`; the current screen renders fixed content, so both widgets
-here are stateless. `HomeScreen` becomes stateful (or delegates to a state-management package)
-once tasks can be added and completed.
-
-**`build` and `BuildContext`.** `build` describes the widget in terms of other widgets, and
-Flutter may call it many times per second — so it must be fast and side-effect free.
-`BuildContext` is the widget's handle on its own position in the tree; it is what lets
-`Theme.of(context)` and `Navigator.of(context)` walk upwards to find ancestor widgets.
-
-**`const` constructors and `key`.** A `const` widget can be reused across rebuilds instead of
-reallocated — a cheap, real performance win, and why `flutter_lints` nudges toward it. `super.key`
-forwards the optional `key`, which is how Flutter tells sibling widgets apart when a list is
-reordered so the right state stays with the right item.
-
-**Theming from one seed colour.** `ColorScheme.fromSeed(seedColor: Colors.orangeAccent)` generates
-a full, accessible Material 3 palette — primary, secondary, surface, error, plus the matching
-`on*` colours for content drawn on top of each. `AppBar` never mentions orange; it reads the
-scheme from the theme. Changing the seed re-tints the whole app coherently.
-
-**Layout by composition.** Flutter has no layout attributes on individual widgets. Instead you
-wrap: `Center` takes one `child` and positions it in the middle of the available space, and
-`Padding`, `Column`, `Row` and friends each do one job. Nesting them produces the layout.
-
-> **Note:** the inline `style: TextStyle(fontSize: 24)` works, but reading from
-> `Theme.of(context).textTheme` is the better habit — it keeps typography consistent and respects
-> the user's platform text-scaling setting.
-
----
-
-## Step 6 — Rewrite the widget test against `TaskManagerApp`
-
-Rewriting `main.dart` broke [`test/widget_test.dart`](../task_manager/test/widget_test.dart): the
-generated test imported `MyApp` and asserted on the counter, so `flutter test` failed to compile.
-It was replaced with five tests covering the app shell.
+Renaming `MyApp` broke [`test/widget_test.dart`](../task_manager/test/widget_test.dart): the
+generated test imported `MyApp` and asserted on the counter, so the suite no longer compiled. It was
+replaced with five tests covering the app shell.
 
 ```bash
 cd task_manager/
@@ -217,37 +167,139 @@ flutter test
 | applies the orange seed colour scheme | the theme's `colorScheme.primary` equals one derived from the same seed |
 | hides the debug banner | `debugShowCheckedModeBanner == false`, `title == 'Task Manager'` |
 
-### Concepts this file demonstrates
+## 7 — Branch, commit, merge
 
-**The three test tiers.** A *unit test* exercises plain Dart with no widgets. A *widget test*
-builds one widget tree headlessly — fast, no device or emulator — and is the tier used here. An
-*integration test* drives the whole app on a real device or browser.
+```bash
+git checkout -b feature/project-setup develop
+git add -A
+git commit                      # .gitignore + these notes + the scaffold
+# → merged into develop via pull request #1
 
-**`testWidgets` and pumping.** Widget tests use `testWidgets`, not `test`, and receive a
-`WidgetTester`. `await tester.pumpWidget(...)` mounts the tree and renders **one frame**; tests
-drive the frame loop by hand rather than waiting on a real clock. (Once the app has animations or
-async loading, `tester.pump()` and `pumpAndSettle()` advance it further.)
+git checkout -b feature/first-experiment develop
+git cherry-pick <sha>           # moved the app-shell commit onto the new branch
+git push -u origin feature/first-experiment
+```
 
-**Finders and matchers.** A *finder* locates widgets — `find.text` by displayed string,
-`find.byType` by class, `find.byIcon`, `find.descendant` for structural relationships. A *matcher*
-states the expectation: `findsOneWidget`, `findsNothing`, `findsNWidgets(n)`. Asserting
-`findsNothing` on the removed `FloatingActionButton` is what stops it silently reappearing.
-
-**Reading widgets and context back out.** `tester.widget<T>(finder)` returns the actual widget
-instance so its properties can be inspected. `tester.element(finder)` returns its `BuildContext`,
-which is what `Theme.of(context)` needs — the same lookup `main.dart` describes, used from a test.
-
-**Testing a generated palette.** `ColorScheme.fromSeed` *derives* a palette, so
-`colorScheme.primary` is not literally `Colors.orangeAccent`. The test therefore compares against
-a scheme built from the same seed, which proves the seed took effect without hard-coding a colour
-value that Material could legitimately change.
-
-**Package-relative imports.** Test files import the app as `package:task_manager/main.dart`, using
-the `name:` from `pubspec.yaml`, rather than a relative path.
+> **Note:** `git cherry-pick` was needed because the app-shell commit was made on
+> `feature/project-setup` *after* that branch's pull request had already been merged, so it was not
+> part of `develop` and not inherited by the new branch.
 
 ---
 
-## Current state
+# Concepts I learned
+
+## Everything is a widget
+
+The UI is a *tree* of widgets, each describing a small piece of the screen. `runApp` takes the root
+widget and mounts it. The current tree:
+
+```text
+TaskManagerApp
+└── MaterialApp          app-wide plumbing: navigation, theme, localisation
+    └── HomeScreen
+        └── Scaffold     the standard Material screen layout
+            ├── AppBar   → Text('Task Manager')
+            └── Center   → Text('Welcome to Flutter!')
+```
+
+`MaterialApp` is the conventional root of a Material app; `Scaffold` provides the named slots a
+screen needs (`appBar`, `body`, `floatingActionButton`, `drawer`, `bottomNavigationBar`) and keeps
+content clear of the keyboard and system bars.
+
+## Stateless vs stateful
+
+A `StatelessWidget` is a pure description of UI — same inputs, same output, nothing to mutate. A
+`StatefulWidget` owns a companion `State` object holding mutable fields, and calls `setState()` to
+tell Flutter to re-run `build`.
+
+The generated demo needed `StatefulWidget` for its `_counter`. The current screen renders fixed
+content, so both widgets are stateless. `HomeScreen` becomes stateful — or delegates to a
+state-management package — once tasks can be added and completed.
+
+## `build` and `BuildContext`
+
+`build` describes a widget in terms of other widgets. Flutter may call it many times per second, so
+it must be fast and free of side effects.
+
+`BuildContext` is the widget's handle on its own position in the tree. That is what lets
+`Theme.of(context)` and `Navigator.of(context)` walk *upwards* to find ancestor widgets.
+
+## `const` constructors and `key`
+
+A `const` widget can be reused across rebuilds instead of reallocated — a cheap, real performance
+win, and why `flutter_lints` nudges toward it.
+
+`super.key` forwards the optional `key`, which is how Flutter tells sibling widgets apart when a
+list is reordered, so the right state stays with the right item.
+
+## Theming from one seed colour
+
+`ColorScheme.fromSeed(seedColor: Colors.orangeAccent)` generates a full, accessible Material 3
+palette — primary, secondary, surface, error, plus the matching `on*` colours for content drawn on
+top of each.
+
+`AppBar` never mentions orange; it reads the scheme from the theme. Changing the seed re-tints the
+whole app coherently.
+
+## Layout by composition
+
+Flutter has no layout attributes on individual widgets. Instead you *wrap*: `Center` takes one
+`child` and positions it in the middle of the available space, and `Padding`, `Column`, `Row` and
+friends each do one job. Nesting them produces the layout.
+
+> Inline `style: TextStyle(fontSize: 24)` works, but reading from `Theme.of(context).textTheme` is
+> the better habit — it keeps typography consistent and respects the user's platform text-scaling
+> setting.
+
+## The three test tiers
+
+| Tier | Scope | Speed |
+| --- | --- | --- |
+| Unit test | plain Dart, no widgets | fastest |
+| Widget test | one widget tree, headless — no device needed | fast |
+| Integration test | the whole app on a real device or browser | slow |
+
+## `testWidgets` and pumping
+
+Widget tests use `testWidgets`, not `test`, and receive a `WidgetTester`.
+`await tester.pumpWidget(...)` mounts the tree and renders **one frame** — tests drive the frame
+loop by hand rather than waiting on a real clock. Once the app has animations or async loading,
+`tester.pump()` and `tester.pumpAndSettle()` advance it further.
+
+## Finders and matchers
+
+A *finder* locates widgets; a *matcher* states the expectation.
+
+| Finder | Locates by |
+| --- | --- |
+| `find.text('...')` | displayed string |
+| `find.byType(Center)` | widget class |
+| `find.byIcon(Icons.add)` | icon |
+| `find.descendant(of:, matching:)` | position in the tree |
+
+Matchers: `findsOneWidget`, `findsNothing`, `findsNWidgets(n)`. Asserting `findsNothing` on the
+removed `FloatingActionButton` is what stops it silently reappearing.
+
+## Reading widgets and context back out
+
+- `tester.widget<T>(finder)` returns the actual widget instance, so its properties can be inspected.
+- `tester.element(finder)` returns its `BuildContext` — which is what `Theme.of(context)` needs.
+  Same lookup as in `main.dart`, performed from a test.
+
+## Testing a generated palette
+
+`ColorScheme.fromSeed` *derives* a palette, so `colorScheme.primary` is **not** literally
+`Colors.orangeAccent`. The test therefore compares against a scheme built from the same seed. That
+proves the seed took effect without hard-coding a colour value Material could legitimately retune.
+
+## Package-relative imports
+
+Test files import the app as `package:task_manager/main.dart`, using the `name:` from
+`pubspec.yaml`, rather than a relative path like `../lib/main.dart`.
+
+---
+
+# Current state
 
 - The app shell runs: an orange-themed `Scaffold` with an `AppBar` and a centred welcome message.
 - No task-manager functionality yet — there is no task model, no list, no persistence.
@@ -255,7 +307,7 @@ the `name:` from `pubspec.yaml`, rather than a relative path.
   dependencies beyond `cupertino_icons` and `flutter_lints`.
 - The Android application ID is still the placeholder `com.example.task_manager`.
 
-## Next steps
+# Next steps
 
 1. Install the Android SDK and register it with `flutter config --android-sdk <path>`.
 2. Update `pubspec.yaml` (description, and dependencies for state management + persistence).

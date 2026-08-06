@@ -1,5 +1,5 @@
 // Task Manager — application entry point.
-// Concepts used here are explained in docs/Steps.md (Step 5).
+// Concepts used here are explained in docs/Steps.md — "Concepts I learned".
 
 import 'package:flutter/material.dart';
 

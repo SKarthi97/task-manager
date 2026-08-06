@@ -1,5 +1,5 @@
 // Widget tests for the Task Manager app shell.
-// Concepts used here are explained in docs/Steps.md (Step 6).
+// Concepts used here are explained in docs/Steps.md — "Concepts I learned".
 //
 // Run with:  flutter test
 
