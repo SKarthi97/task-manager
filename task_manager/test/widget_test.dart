@@ -7,7 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // The app is imported as a package, using the `name:` from pubspec.yaml.
+// HomeScreen needs its own import: main.dart imports it rather than declaring
+// it, and Dart imports are not transitive.
 import 'package:task_manager/main.dart';
+import 'package:task_manager/screens/home_screen.dart';
 
 void main() {
   group('TaskManagerApp', () {

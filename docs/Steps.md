@@ -184,6 +184,43 @@ git push -u origin feature/first-experiment
 > `feature/project-setup` *after* that branch's pull request had already been merged, so it was not
 > part of `develop` and not inherited by the new branch.
 
+## 8 — Move `HomeScreen` into its own file
+
+`HomeScreen` was extracted from `main.dart` into
+[`lib/screens/home_screen.dart`](../task_manager/lib/screens/home_screen.dart), so `main.dart` holds
+only the entry point and app-wide configuration. `main.dart` now imports the screen:
+
+```dart
+import 'package:task_manager/screens/home_screen.dart';
+```
+
+## 9 — Run the analyzer
+
+```bash
+flutter analyze
+```
+
+The first run failed, because moving `HomeScreen` broke the test:
+
+```text
+error • Undefined name 'HomeScreen'. Try correcting the name to one that is defined, or
+        defining the name • test/widget_test.dart:46:26 • undefined_identifier
+
+1 issue found. (ran in 10.7s)
+```
+
+The fix was to import the screen in the test as well — see
+[imports are not transitive](#imports-are-not-transitive). After that:
+
+```bash
+flutter analyze     # No issues found!
+flutter test        # 5 tests passed
+```
+
+> **Note:** Flutter lives in WSL (`/home/karthick/flutter/bin`), so these run from the Ubuntu
+> distro. The default WSL distro is `docker-desktop`, which has no shell of its own — hence
+> `wsl -d Ubuntu` when invoking from Windows.
+
 ---
 
 # Concepts I learned
@@ -296,6 +333,44 @@ proves the seed took effect without hard-coding a colour value Material could le
 
 Test files import the app as `package:task_manager/main.dart`, using the `name:` from
 `pubspec.yaml`, rather than a relative path like `../lib/main.dart`.
+
+## Imports are not transitive
+
+Importing a file does **not** give you access to what *that* file imported. Each file must import
+every name it uses, directly.
+
+This is what broke the test when `HomeScreen` moved out of `main.dart`. The test imported
+`main.dart`, and `main.dart` uses `HomeScreen` — but it *imports* the name rather than declaring it,
+so `HomeScreen` was never visible to the test:
+
+```text
+widget_test.dart ──imports──▶ main.dart ──imports──▶ home_screen.dart
+                 ✗ HomeScreen not visible here ────────────┘
+```
+
+The fix is one line in the test:
+
+```dart
+import 'package:task_manager/screens/home_screen.dart';
+```
+
+(Dart *can* forward names, with `export 'screens/home_screen.dart';` in a barrel file. That is worth
+doing once there are many screens, but an explicit import per file is clearer while there are few.)
+
+## One widget per file
+
+Splitting `HomeScreen` out leaves `main.dart` holding only the entry point and app-wide
+configuration, which is the conventional Flutter layout:
+
+```text
+lib/
+├── main.dart              entry point + MaterialApp configuration
+└── screens/
+    └── home_screen.dart   one screen per file
+```
+
+Files under `lib/` are private to the package unless placed in `lib/src/`; the `screens/`,
+`widgets/`, `models/` split is convention rather than something the tooling enforces.
 
 ---
 
