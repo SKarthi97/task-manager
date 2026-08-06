@@ -7,7 +7,9 @@ Every term in one place, one plain sentence each. Follow a link for the longer e
 | Widget | One piece of the screen. Everything you see is a widget. | [widgets](widgets.md) |
 | Widget tree | Widgets nested inside widgets, making up the whole screen. | [widgets](widgets.md) |
 | `StatelessWidget` | Shows something, but does not manage changing data. | [widgets](widgets.md) |
-| `StatefulWidget` | Can hold data that changes, and redraws when it does. | [widgets](widgets.md) |
+| `StatefulWidget` | Can hold data that changes, and redraws when it does. | [state](state.md) |
+| `State` | The object beside a widget that keeps the changing data alive. | [state](state.md) |
+| `setState` | "The data changed — redraw." Change data inside it. | [state](state.md) |
 | `build` | The method that says what to show. | [widgets](widgets.md) |
 | `BuildContext` | A widget's "you are here" marker in the tree. | [widgets](widgets.md) |
 | `const` | This never changes, so Flutter can reuse it. | [widgets](widgets.md) |

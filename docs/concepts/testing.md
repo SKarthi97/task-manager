@@ -59,6 +59,18 @@ Because `fromSeed` *works out* the palette, `colorScheme.primary` is **not** lit
 The test compares against a scheme built from the same seed instead. That proves the seed was
 applied, without hard-coding a colour value that Flutter is free to adjust in a future version.
 
+## Testing something interactive
+
+Once a button does something, a test can press it:
+
+```dart
+await tester.tap(find.byType(FloatingActionButton));
+await tester.pump();     // draw the frame the tap caused
+```
+
+The `pump` is not optional — without it the test is still looking at the screen from before the tap.
+See [state](state.md#testing-a-tap).
+
 ## Failing tests are the tests working
 
 When the screen text changed and a button was added, two tests failed. Nothing was broken by the

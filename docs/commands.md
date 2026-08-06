@@ -313,3 +313,42 @@ flutter test            # 8 tests passed
 The tests read the sample list from `HomeScreen.tasks` rather than repeating the titles, so adding a
 fourth sample task does not break them. New concepts are in
 [concepts/lists.md](concepts/lists.md).
+
+## 15 — Make the "+" button add a task
+
+`HomeScreen` became a `StatefulWidget`, and the button got a function to run:
+
+| Before | After |
+| --- | --- |
+| `class HomeScreen extends StatelessWidget` | `StatefulWidget` + `_HomeScreenState` |
+| `static const List<Task> tasks` | a `final List<Task>` living in the `State` |
+| `onPressed: null` | `onPressed: () { setState(() { tasks.add(...) }); }` |
+
+This time `flutter analyze` failed, three times over — the tests were reading `HomeScreen.tasks`,
+which no longer exists now the list is private to `_HomeScreenState`:
+
+```text
+error • The getter 'tasks' isn't defined for the type 'HomeScreen'
+        • test/widget_test.dart:32:62 • undefined_getter
+                                        (and lines 39 and 53)
+```
+
+The tests were rewritten to check the screen the way a user sees it, and two tap tests were added,
+taking the suite from 8 to 10:
+
+| Test | Change |
+| --- | --- |
+| renders one row per task | counts against a local `initialTitles` list, not `HomeScreen.tasks` |
+| shows each task title | same |
+| every task starts unchecked and not tappable | same |
+| the add button is **still disabled** | became **is enabled** — `onPressed` is now `isNotNull` |
+| *(new)* tapping add appends a task | tap, `pump`, expect 4 tiles and `Task 4` |
+| *(new)* tapping add twice appends two tasks | expect 5 tiles and `Task 5` |
+
+```bash
+dart format lib test
+flutter analyze         # No issues found!
+flutter test            # 10 tests passed
+```
+
+New concepts are in [concepts/state.md](concepts/state.md).
