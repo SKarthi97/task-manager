@@ -221,72 +221,155 @@ flutter test        # 5 tests passed
 > distro. The default WSL distro is `docker-desktop`, which has no shell of its own — hence
 > `wsl -d Ubuntu` when invoking from Windows.
 
+## 10 — Turn the screen into a task-list empty state
+
+The welcome text became an empty-state message, and a disabled "+" button was added:
+
+| Before | After |
+| --- | --- |
+| `Text('Welcome to Flutter!')` | `Text('No tasks yet')` |
+| no button | `FloatingActionButton` with `onPressed: null` |
+
+`flutter analyze` stayed clean, but **two tests failed** — they still expected the old text and no
+button:
+
+```text
+00:03 +3 -2: Some tests failed.
+
+Failing tests:
+  TaskManagerApp renders the centred welcome message
+  TaskManagerApp builds the expected Material scaffolding
+```
+
+This is the tests doing their job: the UI changed, so the tests had to be updated to match.
+
+| Test | Change |
+| --- | --- |
+| renders the centred welcome message | renamed to *empty-state message*, now looks for `'No tasks yet'` |
+| builds the expected Material scaffolding | now expects the button to be **present**, not absent |
+| *(new)* the add button is still disabled | checks `onPressed` is `null` |
+
+```bash
+flutter analyze     # No issues found!
+flutter test        # 6 tests passed
+```
+
 ---
 
 # Concepts I learned
 
+## Words to know
+
+| Term | In plain words |
+| --- | --- |
+| Widget | One piece of the screen. Everything you see is a widget. |
+| Widget tree | Widgets nested inside widgets, making up the whole screen. |
+| `StatelessWidget` | Shows something, but does not manage changing data. |
+| `StatefulWidget` | Can hold data that changes, and redraws when it does. |
+| `build` | The method that says what to show. |
+| `BuildContext` | A widget's "you are here" marker in the tree. |
+| `const` | This never changes, so Flutter can reuse it. |
+| `Scaffold` | The standard screen frame, with slots to fill. |
+| Theme | The app's colours and fonts, set in one place. |
+| Widget test | A test that builds the screen in memory and checks what it shows. |
+
 ## Everything is a widget
 
-The UI is a *tree* of widgets, each describing a small piece of the screen. `runApp` takes the root
-widget and mounts it. The current tree:
+A widget is one piece of the screen. Widgets go inside other widgets, and that nesting is the
+**widget tree**. `runApp` takes the outermost widget and puts it on screen.
+
+The current tree, top to bottom:
 
 ```text
-TaskManagerApp
-└── MaterialApp          app-wide plumbing: navigation, theme, localisation
-    └── HomeScreen
-        └── Scaffold     the standard Material screen layout
-            ├── AppBar   → Text('Task Manager')
-            └── Center   → Text('Welcome to Flutter!')
+TaskManagerApp                    the app itself
+└── MaterialApp                   provides theming and screen switching
+    └── HomeScreen                the screen shown on open
+        └── Scaffold              the screen frame
+            ├── AppBar            → Text('Task Manager')
+            ├── Center            → Text('No tasks yet')
+            └── FloatingActionButton → Icon(Icons.add)
 ```
 
-`MaterialApp` is the conventional root of a Material app; `Scaffold` provides the named slots a
-screen needs (`appBar`, `body`, `floatingActionButton`, `drawer`, `bottomNavigationBar`) and keeps
-content clear of the keyboard and system bars.
+`Scaffold` is the standard screen frame. You do not position its parts — you drop them into named
+slots (`appBar`, `body`, `floatingActionButton`, `drawer`, `bottomNavigationBar`) and it handles the
+layout, including keeping content clear of the keyboard and system bars.
 
 ## Stateless vs stateful
 
-A `StatelessWidget` is a pure description of UI — same inputs, same output, nothing to mutate. A
-`StatefulWidget` owns a companion `State` object holding mutable fields, and calls `setState()` to
-tell Flutter to re-run `build`.
+**Stateless** = shows something, but does not manage changing data. Give it the same inputs and it
+draws the same thing every time.
 
-The generated demo needed `StatefulWidget` for its `_counter`. The current screen renders fixed
-content, so both widgets are stateless. `HomeScreen` becomes stateful — or delegates to a
-state-management package — once tasks can be added and completed.
+**Stateful** = holds data that can change. When that data changes you call `setState()`, and Flutter
+redraws the widget.
+
+Right now nothing on screen changes, so every widget here is stateless. `HomeScreen` becomes
+stateful once tasks can actually be added — the list of tasks is data that changes.
 
 ## `build` and `BuildContext`
 
-`build` describes a widget in terms of other widgets. Flutter may call it many times per second, so
-it must be fast and free of side effects.
+`build` is the method that says what to show. Flutter calls it whenever the widget needs drawing,
+which can be many times a second — so keep it quick, and never do real work in it (no saving files,
+no network calls).
 
-`BuildContext` is the widget's handle on its own position in the tree. That is what lets
-`Theme.of(context)` and `Navigator.of(context)` walk *upwards* to find ancestor widgets.
+`BuildContext` is the widget's "you are here" marker in the tree. Because a widget knows where it
+sits, it can look *upwards* to find things its parents provide:
 
-## `const` constructors and `key`
+```dart
+Theme.of(context)      // finds the theme set by MaterialApp above
+Navigator.of(context)  // finds the navigator, to move between screens
+```
 
-A `const` widget can be reused across rebuilds instead of reallocated — a cheap, real performance
-win, and why `flutter_lints` nudges toward it.
+## `const` means "this never changes"
 
-`super.key` forwards the optional `key`, which is how Flutter tells sibling widgets apart when a
-list is reordered, so the right state stays with the right item.
+Marking a widget `const` tells Flutter the widget can be built once and reused, instead of being
+rebuilt every time the screen redraws. It is free performance, which is why `flutter_lints` keeps
+suggesting it.
 
-## Theming from one seed colour
+`super.key` passes along an optional `key`. A key is a name tag: when a list gets reordered, keys let
+Flutter keep each widget's data with the right item. It matters for lists, not for a fixed screen.
 
-`ColorScheme.fromSeed(seedColor: Colors.orangeAccent)` generates a full, accessible Material 3
-palette — primary, secondary, surface, error, plus the matching `on*` colours for content drawn on
-top of each.
+## One colour becomes a whole palette
 
-`AppBar` never mentions orange; it reads the scheme from the theme. Changing the seed re-tints the
-whole app coherently.
+```dart
+colorScheme: ColorScheme.fromSeed(seedColor: Colors.orangeAccent)
+```
 
-## Layout by composition
+From that one colour, Flutter works out a full matching set — the main colour, background colours,
+error colours, and the right text colour to put on top of each one so it stays readable.
 
-Flutter has no layout attributes on individual widgets. Instead you *wrap*: `Center` takes one
-`child` and positions it in the middle of the available space, and `Padding`, `Column`, `Row` and
-friends each do one job. Nesting them produces the layout.
+Notice that `AppBar` never mentions orange. It reads the colour from the theme. So changing the seed
+colour re-tints the entire app at once.
 
-> Inline `style: TextStyle(fontSize: 24)` works, but reading from `Theme.of(context).textTheme` is
-> the better habit — it keeps typography consistent and respects the user's platform text-scaling
-> setting.
+## Layout by wrapping
+
+In Flutter you do not set position or alignment on a widget. You **wrap** it in another widget whose
+whole job is that one thing:
+
+| To do this | Wrap in |
+| --- | --- |
+| put it in the middle | `Center` |
+| add space around it | `Padding` |
+| stack things vertically | `Column` |
+| stack things side by side | `Row` |
+
+Nesting these small widgets is how a layout gets built.
+
+> `style: TextStyle(fontSize: 24)` works fine, but taking the size from
+> `Theme.of(context).textTheme` is the better habit — text stays consistent across screens, and it
+> respects the larger-text setting for users who need it.
+
+## A disabled button is `onPressed: null`
+
+Flutter has no `enabled: false`. You disable a button by giving it nothing to do:
+
+```dart
+FloatingActionButton(
+  onPressed: null,        // disabled: greyed out, taps do nothing
+  child: Icon(Icons.add),
+)
+```
+
+Give `onPressed` a function and the button becomes active automatically.
 
 ## The three test tiers
 
@@ -296,52 +379,75 @@ friends each do one job. Nesting them produces the layout.
 | Widget test | one widget tree, headless — no device needed | fast |
 | Integration test | the whole app on a real device or browser | slow |
 
-## `testWidgets` and pumping
+## `testWidgets` and "pumping"
 
-Widget tests use `testWidgets`, not `test`, and receive a `WidgetTester`.
-`await tester.pumpWidget(...)` mounts the tree and renders **one frame** — tests drive the frame
-loop by hand rather than waiting on a real clock. Once the app has animations or async loading,
-`tester.pump()` and `tester.pumpAndSettle()` advance it further.
+Widget tests use `testWidgets`, not `test`, and get a `WidgetTester` to work with.
+
+`await tester.pumpWidget(...)` builds the screen and draws **one frame**. Tests draw frames by hand
+rather than waiting on a real clock, which is why they finish in milliseconds. Later, when the app
+has animations or loading, `tester.pump()` draws the next frame and `tester.pumpAndSettle()` keeps
+drawing until nothing is moving.
 
 ## Finders and matchers
 
-A *finder* locates widgets; a *matcher* states the expectation.
+A test asks two things: *which widget?* (a **finder**) and *how many did you expect?* (a **matcher**).
 
-| Finder | Locates by |
+| Finder | Looks for |
 | --- | --- |
-| `find.text('...')` | displayed string |
-| `find.byType(Center)` | widget class |
-| `find.byIcon(Icons.add)` | icon |
-| `find.descendant(of:, matching:)` | position in the tree |
+| `find.text('No tasks yet')` | text shown on screen |
+| `find.byType(Center)` | a kind of widget |
+| `find.byIcon(Icons.add)` | an icon |
+| `find.descendant(of:, matching:)` | a widget *inside* another widget |
 
-Matchers: `findsOneWidget`, `findsNothing`, `findsNWidgets(n)`. Asserting `findsNothing` on the
-removed `FloatingActionButton` is what stops it silently reappearing.
+| Matcher | Means |
+| --- | --- |
+| `findsOneWidget` | exactly one, and it must be there |
+| `findsNothing` | must not be there at all |
+| `findsNWidgets(3)` | exactly three |
 
-## Reading widgets and context back out
+## Looking inside a widget from a test
 
-- `tester.widget<T>(finder)` returns the actual widget instance, so its properties can be inspected.
-- `tester.element(finder)` returns its `BuildContext` — which is what `Theme.of(context)` needs.
-  Same lookup as in `main.dart`, performed from a test.
+Sometimes checking what is on screen is not enough — you need a widget's actual settings:
+
+```dart
+final fab = tester.widget(find.byType(FloatingActionButton));
+expect(fab.onPressed, isNull);          // is the button disabled?
+```
+
+- `tester.widget(finder)` hands back the real widget, so you can read its properties.
+- `tester.element(finder)` hands back its `BuildContext`, which is what `Theme.of(context)` needs.
+  It is the same upward lookup the app does, performed from a test.
 
 ## Testing a generated palette
 
-`ColorScheme.fromSeed` *derives* a palette, so `colorScheme.primary` is **not** literally
-`Colors.orangeAccent`. The test therefore compares against a scheme built from the same seed. That
-proves the seed took effect without hard-coding a colour value Material could legitimately retune.
+Because `fromSeed` *works out* the palette, `colorScheme.primary` is **not** literally
+`Colors.orangeAccent` — so comparing against orange would fail.
+
+The test compares against a scheme built from the same seed instead. That proves the seed was
+applied, without hard-coding a colour value that Flutter is free to adjust in a future version.
+
+## Failing tests are the tests working
+
+When the screen text changed and a button was added, two tests failed. Nothing was broken by the
+failure — the tests were describing the old screen, and they said so loudly.
+
+The habit to build: after changing the UI, run `flutter test` and update whatever fails to describe
+the *new* intended behaviour. A test that needs no updating when behaviour changes was not checking
+anything useful.
 
 ## Package-relative imports
 
-Test files import the app as `package:task_manager/main.dart`, using the `name:` from
-`pubspec.yaml`, rather than a relative path like `../lib/main.dart`.
+Test files reach the app as `package:task_manager/main.dart` — `task_manager` being the `name:` in
+`pubspec.yaml` — rather than a relative path like `../lib/main.dart`.
 
-## Imports are not transitive
+## Imports are not passed along
 
-Importing a file does **not** give you access to what *that* file imported. Each file must import
-every name it uses, directly.
+Importing a file does **not** give you what *that* file imported. Every file has to import each name
+it uses, itself.
 
-This is what broke the test when `HomeScreen` moved out of `main.dart`. The test imported
-`main.dart`, and `main.dart` uses `HomeScreen` — but it *imports* the name rather than declaring it,
-so `HomeScreen` was never visible to the test:
+This is exactly what broke the test when `HomeScreen` moved out of `main.dart`. The test imported
+`main.dart`, and `main.dart` uses `HomeScreen` — but it *imports* that name rather than defining it,
+so the test still could not see it:
 
 ```text
 widget_test.dart ──imports──▶ main.dart ──imports──▶ home_screen.dart
@@ -354,30 +460,34 @@ The fix is one line in the test:
 import 'package:task_manager/screens/home_screen.dart';
 ```
 
-(Dart *can* forward names, with `export 'screens/home_screen.dart';` in a barrel file. That is worth
-doing once there are many screens, but an explicit import per file is clearer while there are few.)
+The error message names the *symbol* (`Undefined name 'HomeScreen'`), never the missing import — so
+the fix is always "which file defines this, and have I imported it?"
+
+(Dart can forward names along, using `export 'screens/home_screen.dart';` in a single "barrel" file.
+Worth doing once there are many screens; one plain import per file is clearer while there are few.)
 
 ## One widget per file
 
-Splitting `HomeScreen` out leaves `main.dart` holding only the entry point and app-wide
-configuration, which is the conventional Flutter layout:
+Moving `HomeScreen` out leaves `main.dart` with just the starting point and the app-wide settings.
+That is the usual Flutter layout:
 
 ```text
 lib/
-├── main.dart              entry point + MaterialApp configuration
+├── main.dart              starts the app, sets the theme
 └── screens/
     └── home_screen.dart   one screen per file
 ```
 
-Files under `lib/` are private to the package unless placed in `lib/src/`; the `screens/`,
-`widgets/`, `models/` split is convention rather than something the tooling enforces.
+The `screens/`, `widgets/`, `models/` split is a convention people follow, not a rule the tools
+enforce — but following it means anyone can guess where a file lives.
 
 ---
 
 # Current state
 
-- The app shell runs: an orange-themed `Scaffold` with an `AppBar` and a centred welcome message.
-- No task-manager functionality yet — there is no task model, no list, no persistence.
+- The screen shows an orange app bar, an empty-state message (`No tasks yet`), and a disabled "+"
+  button waiting to be wired up.
+- No task-manager functionality yet — there is no task model, no list, no saving.
 - `pubspec.yaml` carries the placeholder description `"A new Flutter project."` and no
   dependencies beyond `cupertino_icons` and `flutter_lints`.
 - The Android application ID is still the placeholder `com.example.task_manager`.

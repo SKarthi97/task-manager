@@ -3,24 +3,34 @@
 
 import 'package:flutter/material.dart';
 
-// The first screen. Becomes stateful once tasks can be added and completed.
+// StatelessWidget means: this widget shows something, but does not manage
+// changing data. It becomes a StatefulWidget once tasks can be added.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  // build describes what to show. Flutter calls it whenever the screen
+  // needs drawing.
   @override
   Widget build(BuildContext context) {
-    // Scaffold provides the standard screen layout slots.
+    // Scaffold is the standard screen frame: it has a slot for a top bar, a
+    // slot for the main content, a slot for a floating button, and so on.
     return Scaffold(
-      // Colours come from the theme, so no colour is set here.
+      // The bar across the top of the screen.
       appBar: AppBar(
+        // const means: this never changes, so Flutter can reuse it.
         title: const Text('Task Manager'),
       ),
-      // Center positions its single child in the middle of the screen.
+      // Center puts its one child in the middle of the space available.
       body: const Center(
-        child: Text(
-          'Welcome to Flutter!',
-          style: TextStyle(fontSize: 24),
-        ),
+        // The empty state — what the user sees before any task exists.
+        child: Text('No tasks yet', style: TextStyle(fontSize: 24)),
+      ),
+      // The round "+" button in the bottom corner.
+      floatingActionButton: const FloatingActionButton(
+        // onPressed: null means the button is disabled — it looks greyed out
+        // and taps do nothing. Give it a function to make it work.
+        onPressed: null,
+        child: Icon(Icons.add),
       ),
     );
   }

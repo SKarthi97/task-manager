@@ -23,18 +23,18 @@ void main() {
       expect(find.text('Task Manager'), findsOneWidget);
     });
 
-    testWidgets('renders the centred welcome message', (
+    testWidgets('renders the centred empty-state message', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(const TaskManagerApp());
 
-      expect(find.text('Welcome to Flutter!'), findsOneWidget);
+      expect(find.text('No tasks yet'), findsOneWidget);
 
       // find.descendant also checks where the widget sits in the tree.
       expect(
         find.descendant(
           of: find.byType(Center),
-          matching: find.text('Welcome to Flutter!'),
+          matching: find.text('No tasks yet'),
         ),
         findsOneWidget,
       );
@@ -50,8 +50,23 @@ void main() {
       expect(find.byType(Scaffold), findsOneWidget);
       expect(find.byType(AppBar), findsOneWidget);
 
-      // Guards against the counter demo's button reappearing.
-      expect(find.byType(FloatingActionButton), findsNothing);
+      // The add button exists, showing a "+" icon.
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+      expect(find.byIcon(Icons.add), findsOneWidget);
+    });
+
+    testWidgets('the add button is still disabled', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      final FloatingActionButton fab = tester.widget(
+        find.byType(FloatingActionButton),
+      );
+
+      // onPressed: null is what makes a button disabled in Flutter. When adding
+      // a task is wired up, this test changes to check the tap does something.
+      expect(fab.onPressed, isNull);
     });
 
     testWidgets('applies the orange seed colour scheme', (
