@@ -123,20 +123,134 @@ WARNING: Falling back to CPU-only rendering. Reason: webGLVersion is -1
 ## Step 4 — Add repository ignore rules
 
 A repository-root [`.gitignore`](../.gitignore) was added on top of the Flutter-generated
-[`task_manager/.gitignore`](../task_manager/.gitignore). It covers build output, IDE files, and —
-importantly — machine-specific files the Flutter template does not exclude:
+[`task_manager/.gitignore`](../task_manager/.gitignore). It covers build output, IDE files, and
+machine-specific or sensitive files:
 
-- `**/android/local.properties` (contains the local `flutter.sdk` path)
+- `**/android/local.properties` (contains the local `flutter.sdk` path) — also already excluded by
+  the generated [`task_manager/android/.gitignore`](../task_manager/android/.gitignore); the
+  root rule makes the intent explicit for any future Android module
 - Signing material: `key.properties`, `*.jks`, `*.keystore`
 - Generated Xcode configs and per-platform `ephemeral/` directories
 - `.env` files (with `.env.example` kept)
 
 ---
 
+## Step 5 — Replace the counter demo with the app shell
+
+[`lib/main.dart`](../task_manager/lib/main.dart) was rewritten: the generated counter demo
+(97 lines) became a 15-line app shell. The source carries only brief one-line comments; the
+concepts behind them are explained here instead, and both `main.dart` and `widget_test.dart` point
+back to this document.
+
+| Before (`flutter create`) | After |
+| --- | --- |
+| `MyApp` | `TaskManagerApp` |
+| `MyHomePage` — a `StatefulWidget` | `HomeScreen` — a `StatelessWidget` |
+| `title: 'Flutter Demo'` | `title: 'Task Manager'` |
+| Seed colour `Colors.deepPurple` | Seed colour `Colors.orangeAccent` |
+| Debug banner shown (default) | `debugShowCheckedModeBanner: false` |
+| Counter `Column` + `FloatingActionButton` | A single centred `Text` |
+| `_counter` field, `_incrementCounter()`, `setState` | No state |
+
+### Concepts this file demonstrates
+
+**Everything is a widget.** The UI is a *tree* of widgets, each describing a small piece of the
+screen. `runApp` takes the root widget and mounts it. Here the tree is:
+
+```text
+TaskManagerApp
+└── MaterialApp          app-wide plumbing: navigation, theme, localisation
+    └── HomeScreen
+        └── Scaffold     the standard Material screen layout
+            ├── AppBar   → Text('Task Manager')
+            └── Center   → Text('Welcome to Flutter!')
+```
+
+**Stateless vs stateful.** A `StatelessWidget` is a pure description of UI — same inputs, same
+output, nothing to mutate. A `StatefulWidget` owns a companion `State` object holding mutable
+fields, and calls `setState()` to tell Flutter to re-run `build`. The generated demo needed
+`StatefulWidget` for its `_counter`; the current screen renders fixed content, so both widgets
+here are stateless. `HomeScreen` becomes stateful (or delegates to a state-management package)
+once tasks can be added and completed.
+
+**`build` and `BuildContext`.** `build` describes the widget in terms of other widgets, and
+Flutter may call it many times per second — so it must be fast and side-effect free.
+`BuildContext` is the widget's handle on its own position in the tree; it is what lets
+`Theme.of(context)` and `Navigator.of(context)` walk upwards to find ancestor widgets.
+
+**`const` constructors and `key`.** A `const` widget can be reused across rebuilds instead of
+reallocated — a cheap, real performance win, and why `flutter_lints` nudges toward it. `super.key`
+forwards the optional `key`, which is how Flutter tells sibling widgets apart when a list is
+reordered so the right state stays with the right item.
+
+**Theming from one seed colour.** `ColorScheme.fromSeed(seedColor: Colors.orangeAccent)` generates
+a full, accessible Material 3 palette — primary, secondary, surface, error, plus the matching
+`on*` colours for content drawn on top of each. `AppBar` never mentions orange; it reads the
+scheme from the theme. Changing the seed re-tints the whole app coherently.
+
+**Layout by composition.** Flutter has no layout attributes on individual widgets. Instead you
+wrap: `Center` takes one `child` and positions it in the middle of the available space, and
+`Padding`, `Column`, `Row` and friends each do one job. Nesting them produces the layout.
+
+> **Note:** the inline `style: TextStyle(fontSize: 24)` works, but reading from
+> `Theme.of(context).textTheme` is the better habit — it keeps typography consistent and respects
+> the user's platform text-scaling setting.
+
+---
+
+## Step 6 — Rewrite the widget test against `TaskManagerApp`
+
+Rewriting `main.dart` broke [`test/widget_test.dart`](../task_manager/test/widget_test.dart): the
+generated test imported `MyApp` and asserted on the counter, so `flutter test` failed to compile.
+It was replaced with five tests covering the app shell.
+
+```bash
+cd task_manager/
+flutter test
+```
+
+| Test | Asserts |
+| --- | --- |
+| renders the app bar title | `find.text('Task Manager')` matches exactly one widget |
+| renders the centred welcome message | the welcome `Text` exists **and** is a descendant of `Center` |
+| builds the expected Material scaffolding | `MaterialApp`, `HomeScreen`, `Scaffold`, `AppBar` present; `FloatingActionButton` absent |
+| applies the orange seed colour scheme | the theme's `colorScheme.primary` equals one derived from the same seed |
+| hides the debug banner | `debugShowCheckedModeBanner == false`, `title == 'Task Manager'` |
+
+### Concepts this file demonstrates
+
+**The three test tiers.** A *unit test* exercises plain Dart with no widgets. A *widget test*
+builds one widget tree headlessly — fast, no device or emulator — and is the tier used here. An
+*integration test* drives the whole app on a real device or browser.
+
+**`testWidgets` and pumping.** Widget tests use `testWidgets`, not `test`, and receive a
+`WidgetTester`. `await tester.pumpWidget(...)` mounts the tree and renders **one frame**; tests
+drive the frame loop by hand rather than waiting on a real clock. (Once the app has animations or
+async loading, `tester.pump()` and `pumpAndSettle()` advance it further.)
+
+**Finders and matchers.** A *finder* locates widgets — `find.text` by displayed string,
+`find.byType` by class, `find.byIcon`, `find.descendant` for structural relationships. A *matcher*
+states the expectation: `findsOneWidget`, `findsNothing`, `findsNWidgets(n)`. Asserting
+`findsNothing` on the removed `FloatingActionButton` is what stops it silently reappearing.
+
+**Reading widgets and context back out.** `tester.widget<T>(finder)` returns the actual widget
+instance so its properties can be inspected. `tester.element(finder)` returns its `BuildContext`,
+which is what `Theme.of(context)` needs — the same lookup `main.dart` describes, used from a test.
+
+**Testing a generated palette.** `ColorScheme.fromSeed` *derives* a palette, so
+`colorScheme.primary` is not literally `Colors.orangeAccent`. The test therefore compares against
+a scheme built from the same seed, which proves the seed took effect without hard-coding a colour
+value that Material could legitimately change.
+
+**Package-relative imports.** Test files import the app as `package:task_manager/main.dart`, using
+the `name:` from `pubspec.yaml`, rather than a relative path.
+
+---
+
 ## Current state
 
-- The scaffold builds and runs, but no task-manager functionality exists yet —
-  `lib/main.dart` is still the generated counter demo.
+- The app shell runs: an orange-themed `Scaffold` with an `AppBar` and a centred welcome message.
+- No task-manager functionality yet — there is no task model, no list, no persistence.
 - `pubspec.yaml` carries the placeholder description `"A new Flutter project."` and no
   dependencies beyond `cupertino_icons` and `flutter_lints`.
 - The Android application ID is still the placeholder `com.example.task_manager`.
@@ -146,5 +260,5 @@ importantly — machine-specific files the Flutter template does not exclude:
 1. Install the Android SDK and register it with `flutter config --android-sdk <path>`.
 2. Update `pubspec.yaml` (description, and dependencies for state management + persistence).
 3. Replace the Android placeholder application ID.
-4. Replace the counter demo with the task-manager data model, state layer, and UI,
-   and update `test/widget_test.dart` accordingly.
+4. Build the task-manager feature itself: a `Task` model, a state layer, and list/add/edit UI,
+   extending the widget tests as each piece lands.
