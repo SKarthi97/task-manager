@@ -1,5 +1,5 @@
 // Task Manager — application entry point.
-// Concepts used here are explained in docs/Steps.md — "Concepts I learned".
+// Explained in docs/concepts/widgets.md
 
 import 'package:flutter/material.dart';
 import 'package:task_manager/screens/home_screen.dart';

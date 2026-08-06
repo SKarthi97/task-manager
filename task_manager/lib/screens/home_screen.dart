@@ -1,5 +1,5 @@
 // The app's first screen, kept out of main.dart so entry point and UI stay separate.
-// Concepts used here are explained in docs/Steps.md — "Concepts I learned".
+// Explained in docs/concepts/widgets.md
 
 import 'package:flutter/material.dart';
 
