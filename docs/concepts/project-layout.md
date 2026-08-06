@@ -12,8 +12,10 @@ lib/
 ├── main.dart              starts the app, sets the theme
 ├── models/
 │   └── task.dart          what a task is
-└── screens/
-    └── home_screen.dart   one screen per file
+├── screens/
+│   └── home_screen.dart   one screen per file
+└── widgets/
+    └── task_tile.dart     one reusable piece of UI
 ```
 
 The `screens/`, `widgets/`, `models/` split is a convention people follow, not a rule the tools

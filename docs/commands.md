@@ -273,6 +273,43 @@ docs/
     ├── widgets.md
     ├── theming-layout.md
     ├── dart-basics.md
+    ├── lists.md
     ├── testing.md
     └── project-layout.md
 ```
+
+## 14 — Show the tasks in a list
+
+Three pieces landed together:
+
+| File | Change |
+| --- | --- |
+| [`models/task.dart`](../task_manager/lib/models/task.dart) | fields became `final`, constructor became `const` |
+| [`widgets/task_tile.dart`](../task_manager/lib/widgets/task_tile.dart) | **new** — one row: a disabled `Checkbox` and the task title |
+| [`screens/home_screen.dart`](../task_manager/lib/screens/home_screen.dart) | `static const` sample tasks, and `ListView.builder` in place of the empty-state text |
+
+`flutter analyze` stayed clean, and one test failed — the empty-state message is gone:
+
+```text
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "No tasks yet": []>
+   Which: means none were found but one was expected
+```
+
+It was replaced by three tests covering the list, taking the suite from 6 to 8:
+
+| Test | Asserts |
+| --- | --- |
+| renders one row per task | one `TaskTile` per sample task, inside one `ListView` |
+| shows each task title | every title in `HomeScreen.tasks` appears on screen |
+| every task starts unchecked and not tappable | each `Checkbox` has `value: false` and `onChanged: null` |
+
+```bash
+dart format lib test    # 2 files reformatted to 2-space indent
+flutter analyze         # No issues found!
+flutter test            # 8 tests passed
+```
+
+The tests read the sample list from `HomeScreen.tasks` rather than repeating the titles, so adding a
+fourth sample task does not break them. New concepts are in
+[concepts/lists.md](concepts/lists.md).

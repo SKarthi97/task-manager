@@ -10,7 +10,9 @@ import 'package:flutter_test/flutter_test.dart';
 // HomeScreen needs its own import: main.dart imports it rather than declaring
 // it, and Dart imports are not transitive.
 import 'package:task_manager/main.dart';
+import 'package:task_manager/models/task.dart';
 import 'package:task_manager/screens/home_screen.dart';
+import 'package:task_manager/widgets/task_tile.dart';
 
 void main() {
   group('TaskManagerApp', () {
@@ -23,21 +25,36 @@ void main() {
       expect(find.text('Task Manager'), findsOneWidget);
     });
 
-    testWidgets('renders the centred empty-state message', (
+    testWidgets('renders one row per task', (WidgetTester tester) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      // findsNWidgets checks an exact count — one tile for each sample task.
+      expect(find.byType(TaskTile), findsNWidgets(HomeScreen.tasks.length));
+      expect(find.byType(ListView), findsOneWidget);
+    });
+
+    testWidgets('shows each task title', (WidgetTester tester) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      for (final Task task in HomeScreen.tasks) {
+        expect(find.text(task.title), findsOneWidget);
+      }
+    });
+
+    testWidgets('every task starts unchecked and not tappable', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(const TaskManagerApp());
 
-      expect(find.text('No tasks yet'), findsOneWidget);
-
-      // find.descendant also checks where the widget sits in the tree.
-      expect(
-        find.descendant(
-          of: find.byType(Center),
-          matching: find.text('No tasks yet'),
-        ),
-        findsOneWidget,
+      final Iterable<Checkbox> boxes = tester.widgetList<Checkbox>(
+        find.byType(Checkbox),
       );
+
+      expect(boxes.length, HomeScreen.tasks.length);
+      for (final Checkbox box in boxes) {
+        expect(box.value, isFalse); // isCompleted defaults to false
+        expect(box.onChanged, isNull); // disabled, like the "+" button
+      }
     });
 
     testWidgets('builds the expected Material scaffolding', (

@@ -15,6 +15,11 @@ Every term in one place, one plain sentence each. Follow a link for the longer e
 | Theme | The app's colours and fonts, set in one place. | [theming-layout](theming-layout.md) |
 | Seed colour | One colour Flutter builds a whole palette from. | [theming-layout](theming-layout.md) |
 | `onPressed: null` | How you disable a button — there is no `enabled: false`. | [theming-layout](theming-layout.md) |
+| `ListView.builder` | A scrolling list that builds only the rows on screen. | [lists](lists.md) |
+| `ListTile` | A ready-made row, with slots for an icon, title and more. | [lists](lists.md) |
+| `itemBuilder` | The function Flutter calls to build row number *n*. | [lists](lists.md) |
+| `final` | Set once when the object is created, never reassigned. | [lists](lists.md) |
+| `static` | Belongs to the class itself, not to each instance. | [lists](lists.md) |
 | Model | A plain class that holds data, with no screen code in it. | [dart-basics](dart-basics.md) |
 | `String?` | A string that is allowed to be null (missing). | [dart-basics](dart-basics.md) |
 | `required` | The caller *must* pass this value. | [dart-basics](dart-basics.md) |
