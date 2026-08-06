@@ -26,6 +26,12 @@ Every term in one place, one plain sentence each. Follow a link for the longer e
 | `String?` | A string that is allowed to be null (missing). | [dart-basics](dart-basics.md) |
 | `required` | The caller *must* pass this value. | [dart-basics](dart-basics.md) |
 | Named parameter | An argument passed by name, like `title: 'Buy milk'`. | [dart-basics](dart-basics.md) |
+| `TextField` | A box the user types into. | [dialogs-and-input](dialogs-and-input.md) |
+| Controller | Your handle on a text field — reads and clears what was typed. | [dialogs-and-input](dialogs-and-input.md) |
+| `dispose` | Cleanup that runs when a screen is removed for good. | [dialogs-and-input](dialogs-and-input.md) |
+| `showDialog` | Puts a small screen on top of the current one. | [dialogs-and-input](dialogs-and-input.md) |
+| `Navigator.pop` | Closes a dialog, or goes back a screen — the same thing. | [dialogs-and-input](dialogs-and-input.md) |
+| `pumpAndSettle` | In a test, keep drawing until animations stop. | [dialogs-and-input](dialogs-and-input.md) |
 | Widget test | A test that builds the screen in memory and checks what it shows. | [testing](testing.md) |
 | Finder | The part of a test that says *which* widget to look for. | [testing](testing.md) |
 | Matcher | The part of a test that says *how many* you expected. | [testing](testing.md) |

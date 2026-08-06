@@ -26,6 +26,10 @@ class _HomeScreenState extends State<HomeScreen> {
     const Task(title: "Practice Dart"),
   ];
 
+  // A controller is the handle on a text field: it holds what has been typed,
+  // and lets this code read or clear it.
+  final TextEditingController _taskController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,17 +42,81 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        // Now that onPressed has a function, the button is enabled.
+        // The button no longer adds a task itself — it asks for the title first.
         onPressed: () {
-          // setState says "the data changed, redraw". Change the data inside
-          // it — adding to the list without setState would update the list but
-          // leave the screen showing the old rows.
-          setState(() {
-            tasks.add(Task(title: "Task ${tasks.length + 1}"));
-          });
+          _showAddTaskDialog();
         },
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  // dispose runs when this screen is removed for good. The controller holds
+  // resources Flutter cannot clean up on its own, so it has to be released here
+  // or it leaks. Anything you create in a State and keep needs this.
+  @override
+  void dispose() {
+    _taskController.dispose();
+    super.dispose();
+  }
+
+  // Asks the user for a title, then adds the task.
+  void _showAddTaskDialog() {
+    // Clear first, so whatever was typed last time is not still sitting there.
+    _taskController.clear();
+
+    // showDialog puts a small screen on top of this one. The dark, tappable
+    // background and the closing behaviour come for free.
+    showDialog(
+      context: context,
+      builder: (context) {
+        // AlertDialog is the standard dialog shape: a title, some content, and
+        // a row of buttons.
+        return AlertDialog(
+          title: const Text('Add New Task'),
+          content: TextField(
+            // Wiring the field to the controller is what lets the buttons
+            // below read what was typed.
+            controller: _taskController,
+            // hintText is the grey placeholder shown while the field is empty.
+            decoration: const InputDecoration(hintText: 'Enter task title'),
+            // Put the cursor in the field straight away, so the user can type
+            // without tapping first.
+            autofocus: true,
+          ),
+          // actions is the button row along the bottom.
+          actions: [
+            TextButton(
+              onPressed: () {
+                _taskController.clear();
+                // Navigator.pop closes the dialog — the same call that goes
+                // back a screen, because a dialog is just another route.
+                Navigator.pop(context);
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // trim() drops surrounding spaces, so "   " counts as empty.
+                if (_taskController.text.trim().isEmpty) {
+                  // Returning early leaves the dialog open, so the user can
+                  // see nothing happened and type something.
+                  return;
+                }
+
+                // Only the data change goes inside setState.
+                setState(() {
+                  tasks.add(Task(title: _taskController.text.trim()));
+                });
+
+                _taskController.clear();
+                Navigator.pop(context);
+              },
+              child: const Text('Add Task'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

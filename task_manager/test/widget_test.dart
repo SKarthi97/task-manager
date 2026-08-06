@@ -91,33 +91,104 @@ void main() {
       expect(fab.onPressed, isNotNull);
     });
 
-    testWidgets('tapping add appends a task to the list', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('tapping add opens the dialog', (WidgetTester tester) async {
       await tester.pumpWidget(const TaskManagerApp());
-      expect(find.byType(TaskTile), findsNWidgets(3));
 
-      // tap simulates the press; pump draws the frame that follows it. Without
-      // the pump, the test would still be looking at the pre-tap screen.
+      // tap sends the press; pumpAndSettle then keeps drawing frames until the
+      // dialog has finished animating open. A single pump would catch it midway.
       await tester.tap(find.byType(FloatingActionButton));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      expect(find.byType(TaskTile), findsNWidgets(4));
-      expect(find.text('Task 4'), findsOneWidget);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text('Add New Task'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('Enter task title'), findsOneWidget); // the hint
+
+      // Nothing added yet — the list is untouched while the dialog is open.
+      expect(find.byType(TaskTile), findsNWidgets(initialTitles.length));
     });
 
-    testWidgets('tapping add twice appends two tasks', (
+    testWidgets('typing a title and confirming adds the task', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(const TaskManagerApp());
 
       await tester.tap(find.byType(FloatingActionButton));
-      await tester.pump();
-      await tester.tap(find.byType(FloatingActionButton));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      expect(find.byType(TaskTile), findsNWidgets(5));
-      expect(find.text('Task 5'), findsOneWidget);
+      // enterText types into the field, as a user would.
+      await tester.enterText(find.byType(TextField), 'Write documentation');
+      await tester.tap(find.text('Add Task'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsNothing); // dialog closed
+      expect(find.byType(TaskTile), findsNWidgets(initialTitles.length + 1));
+      expect(find.text('Write documentation'), findsOneWidget);
+    });
+
+    testWidgets('the title is trimmed before it is used', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '   Buy milk   ');
+      await tester.tap(find.text('Add Task'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Buy milk'), findsOneWidget);
+    });
+
+    testWidgets('cancel closes the dialog without adding', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Discard me');
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(TaskTile), findsNWidgets(initialTitles.length));
+      expect(find.text('Discard me'), findsNothing);
+    });
+
+    testWidgets('an empty title is refused and the dialog stays open', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      // Whitespace only, which counts as empty once trimmed.
+      await tester.enterText(find.byType(TextField), '    ');
+      await tester.tap(find.text('Add Task'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsOneWidget); // still open
+      expect(find.byType(TaskTile), findsNWidgets(initialTitles.length));
+    });
+
+    testWidgets('the field is empty again on reopening', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Abandoned text');
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      // The controller is cleared before showing, so nothing carries over.
+      expect(find.text('Abandoned text'), findsNothing);
     });
 
     testWidgets('applies the orange seed colour scheme', (
