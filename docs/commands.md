@@ -352,3 +352,42 @@ flutter test            # 10 tests passed
 ```
 
 New concepts are in [concepts/state.md](concepts/state.md).
+
+## 16 — Ask for the task title in a dialog
+
+The "+" button stopped inventing titles (`Task 4`) and started asking for one:
+
+| Before | After |
+| --- | --- |
+| `onPressed` added a task directly | `onPressed` calls `_showAddTaskDialog()` |
+| — | a `TextEditingController`, disposed in `dispose()` |
+| — | `showDialog` → `AlertDialog` with a `TextField` and Cancel / Add Task |
+| — | empty or whitespace-only titles refused |
+
+`flutter analyze` stayed clean; the two tap tests failed, because the button now opens a dialog
+instead of adding a task:
+
+```text
+Expected: exactly 4 matching candidates
+  Actual: _TypeWidgetFinder:<Found 3 widgets with type "TaskTile">
+   Which: is not enough
+```
+
+They were replaced by six dialog tests, taking the suite from 10 to 14:
+
+| Test | Asserts |
+| --- | --- |
+| tapping add opens the dialog | `AlertDialog`, `TextField` and hint appear; no task added yet |
+| typing a title and confirming adds the task | dialog closes, a fourth tile appears with that title |
+| the title is trimmed before it is used | `'   Buy milk   '` is stored as `'Buy milk'` |
+| cancel closes the dialog without adding | list unchanged, typed text discarded |
+| an empty title is refused and the dialog stays open | whitespace only → still open, nothing added |
+| the field is empty again on reopening | the controller is cleared before showing |
+
+```bash
+dart format lib test
+flutter analyze         # No issues found!
+flutter test            # 14 tests passed
+```
+
+New concepts are in [concepts/dialogs-and-input.md](concepts/dialogs-and-input.md).

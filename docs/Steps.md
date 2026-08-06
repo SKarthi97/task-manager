@@ -17,6 +17,7 @@ needed following up.
 | [concepts/dart-basics.md](concepts/dart-basics.md) | Models, `?` for null, named parameters and `required` |
 | [concepts/lists.md](concepts/lists.md) | `ListView.builder`, `ListTile`, passing data down, `final`/`const` |
 | [concepts/state.md](concepts/state.md) | `StatefulWidget`, `setState`, and testing a tap |
+| [concepts/dialogs-and-input.md](concepts/dialogs-and-input.md) | `TextField` controllers, `dispose`, `showDialog`, `Navigator.pop` |
 | [concepts/testing.md](concepts/testing.md) | Widget tests, finders and matchers, why failing tests are good |
 | [concepts/project-layout.md](concepts/project-layout.md) | Where files live, imports, line endings |
 
@@ -39,11 +40,12 @@ Source files carry only brief comments and point at the file that explains them.
 
 ## Current state
 
-- The screen shows a scrolling list of three starting tasks and a working "+" button: tapping it
-  adds `Task 4`, `Task 5`, and so on, and the list redraws.
-- Still to do: the checkboxes are disabled, added tasks get placeholder titles rather than typed
-  ones, and nothing is saved — closing the app resets the list.
-- `flutter analyze` is clean and all 10 widget tests pass.
+- The screen shows a scrolling list of three starting tasks. The "+" button opens a dialog asking
+  for a title; typing one and pressing **Add Task** adds it, **Cancel** discards it, and an empty
+  title is refused.
+- Still to do: the checkboxes are disabled, tasks cannot be edited or deleted, and nothing is
+  saved — closing the app resets the list.
+- `flutter analyze` is clean and all 14 widget tests pass.
 - `pubspec.yaml` carries the placeholder description `"A new Flutter project."` and no
   dependencies beyond `cupertino_icons` and `flutter_lints`.
 - The Android application ID is still the placeholder `com.example.task_manager`.
@@ -52,10 +54,12 @@ Source files carry only brief comments and point at the file that explains them.
 
 1. Let the checkboxes tick a task off. Because `Task` is immutable, this means replacing the task in
    the list rather than editing it — a good reason to add a `copyWith` method.
-2. Ask the user for a title instead of `Task 4` — a dialog or a second screen with a `TextField`.
-3. Bring back an empty-state message, shown only when the list is empty.
-4. Add a unit test for `Task` (no widgets needed) alongside the widget tests.
-5. Save the list so it survives a restart.
+2. Tell the user *why* an empty title was refused, instead of silently doing nothing —
+   `TextFormField` inside a `Form` gives you validation messages.
+3. Let the dialog capture the optional `description`, which the model already has and nothing sets.
+4. Bring back an empty-state message, shown only when the list is empty.
+5. Add a unit test for `Task` (no widgets needed) alongside the widget tests.
+6. Save the list so it survives a restart.
 4. Install the Android SDK and register it with `flutter config --android-sdk <path>`.
 5. Update `pubspec.yaml` (description, and dependencies for state management + saving).
 6. Replace the Android placeholder application ID.

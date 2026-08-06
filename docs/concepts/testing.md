@@ -71,6 +71,10 @@ await tester.pump();     // draw the frame the tap caused
 The `pump` is not optional — without it the test is still looking at the screen from before the tap.
 See [state](state.md#testing-a-tap).
 
+For anything that animates — a dialog opening, a page changing — use `pumpAndSettle()` instead: it
+keeps drawing frames until nothing is moving. Typing is `tester.enterText(finder, 'text')`. See
+[dialogs-and-input](dialogs-and-input.md#testing-typing-and-dialogs).
+
 ## Failing tests are the tests working
 
 When the screen text changed and a button was added, two tests failed. Nothing was broken by the
