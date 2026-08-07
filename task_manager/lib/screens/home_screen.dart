@@ -21,9 +21,9 @@ class _HomeScreenState extends State<HomeScreen> {
   // final means the list itself is never swapped for a different list —
   // its contents can still change with add() and remove().
   final List<Task> tasks = [
-    const Task(title: "Learn Flutter widgets"),
-    const Task(title: "Build Task Manager app"),
-    const Task(title: "Practice Dart"),
+    Task(title: "Learn Flutter widgets"),
+    Task(title: "Build Task Manager app"),
+    Task(title: "Practice Dart"),
   ];
 
   // A controller is the handle on a text field: it holds what has been typed,
@@ -38,7 +38,17 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ListView.builder(
         itemCount: tasks.length,
         itemBuilder: (context, index) {
-          return TaskTile(task: tasks[index]);
+          final task = tasks[index];
+          return TaskTile(
+            task: task,
+            // The tile reports the tap; this screen decides what it means.
+            // The data lives here, so the change has to happen here too.
+            onToggle: () {
+              setState(() {
+                task.isCompleted = !task.isCompleted;
+              });
+            },
+          );
         },
       ),
       floatingActionButton: FloatingActionButton(

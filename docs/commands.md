@@ -391,3 +391,48 @@ flutter test            # 14 tests passed
 ```
 
 New concepts are in [concepts/dialogs-and-input.md](concepts/dialogs-and-input.md).
+
+## 17 — Let a task be ticked off
+
+The checkbox became live. Three files changed together:
+
+| File | Change |
+| --- | --- |
+| [`models/task.dart`](../task_manager/lib/models/task.dart) | `isCompleted` dropped `final`, so it can be flipped in place |
+| [`widgets/task_tile.dart`](../task_manager/lib/widgets/task_tile.dart) | takes an `onToggle` callback; strikes the title through when complete |
+| [`screens/home_screen.dart`](../task_manager/lib/screens/home_screen.dart) | passes `onToggle`, flipping `isCompleted` inside `setState` |
+
+`flutter analyze` failed with five errors, all in `itemBuilder`:
+
+```text
+error • The named parameter 'onToggle' is required, but there's no corresponding argument
+error • Function expressions can't be named
+error • Too many positional arguments: 0 expected, but 1 found
+error • Undefined name 'task'  (twice)
+```
+
+Two mistakes behind all five:
+
+1. **A missing colon.** `onToggle() { ... }` is a *named function declaration*, which Dart does not
+   allow in an argument list. It needed `onToggle: () { ... }` — with the colon it is a named
+   argument whose value happens to be a function.
+2. **`task` did not exist there.** Inside `itemBuilder` the task is `tasks[index]`, so a
+   `final task = tasks[index];` line was needed before using it.
+
+The suite went from 14 to 18:
+
+| Test | Change |
+| --- | --- |
+| every task starts unchecked and **not tappable** | became **tappable** — `onChanged` is now `isNotNull` |
+| *(new)* tapping a checkbox marks that task complete | the tapped box turns true, **the others stay false** |
+| *(new)* tapping a checked box unchecks it again | the toggle goes both ways |
+| *(new)* a completed task title is struck through | reads `decoration` off the `Text` widget |
+| *(new)* a newly added task can be completed too | add via the dialog, then tick the last box |
+
+```bash
+dart format lib test
+flutter analyze         # No issues found!
+flutter test            # 18 tests passed
+```
+
+New concepts are in [concepts/callbacks.md](concepts/callbacks.md).

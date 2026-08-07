@@ -49,7 +49,7 @@ void main() {
       }
     });
 
-    testWidgets('every task starts unchecked and not tappable', (
+    testWidgets('every task starts unchecked and tappable', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(const TaskManagerApp());
@@ -61,8 +61,74 @@ void main() {
       expect(boxes.length, initialTitles.length);
       for (final Checkbox box in boxes) {
         expect(box.value, isFalse); // isCompleted defaults to false
-        expect(box.onChanged, isNull); // still disabled
+        expect(box.onChanged, isNotNull); // enabled now
       }
+    });
+
+    testWidgets('tapping a checkbox marks that task complete', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pump();
+
+      final List<Checkbox> boxes = tester
+          .widgetList<Checkbox>(find.byType(Checkbox))
+          .toList();
+
+      expect(boxes.first.value, isTrue);
+      // Only the tapped one changed — the others are untouched.
+      expect(boxes.skip(1).every((Checkbox box) => box.value == false), isTrue);
+    });
+
+    testWidgets('tapping a checked box unchecks it again', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pump();
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pump();
+
+      final Checkbox box = tester.widget(find.byType(Checkbox).first);
+      expect(box.value, isFalse);
+    });
+
+    testWidgets('a completed task title is struck through', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      // Before: no strikethrough.
+      Text title = tester.widget(find.text(initialTitles.first));
+      expect(title.style?.decoration, TextDecoration.none);
+
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pump();
+
+      // After: crossed out.
+      title = tester.widget(find.text(initialTitles.first));
+      expect(title.style?.decoration, TextDecoration.lineThrough);
+    });
+
+    testWidgets('a newly added task can be completed too', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Tick me');
+      await tester.tap(find.text('Add Task'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(Checkbox).last);
+      await tester.pump();
+
+      final Checkbox box = tester.widget(find.byType(Checkbox).last);
+      expect(box.value, isTrue);
     });
 
     testWidgets('builds the expected Material scaffolding', (
