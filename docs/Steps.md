@@ -18,6 +18,7 @@ needed following up.
 | [concepts/lists.md](concepts/lists.md) | `ListView.builder`, `ListTile`, passing data down, `final`/`const` |
 | [concepts/state.md](concepts/state.md) | `StatefulWidget`, `setState`, and testing a tap |
 | [concepts/dialogs-and-input.md](concepts/dialogs-and-input.md) | `TextField` controllers, `dispose`, `showDialog`, `Navigator.pop` |
+| [concepts/callbacks.md](concepts/callbacks.md) | Data down / events up, `VoidCallback`, `? :`, mutable vs `copyWith` |
 | [concepts/testing.md](concepts/testing.md) | Widget tests, finders and matchers, why failing tests are good |
 | [concepts/project-layout.md](concepts/project-layout.md) | Where files live, imports, line endings |
 
@@ -43,17 +44,17 @@ Source files carry only brief comments and point at the file that explains them.
 - The screen shows a scrolling list of three starting tasks. The "+" button opens a dialog asking
   for a title; typing one and pressing **Add Task** adds it, **Cancel** discards it, and an empty
   title is refused.
-- Still to do: the checkboxes are disabled, tasks cannot be edited or deleted, and nothing is
-  saved — closing the app resets the list.
-- `flutter analyze` is clean and all 14 widget tests pass.
+- Tapping a task's checkbox ticks it off and crosses out the title; tapping again undoes it.
+- Still to do: tasks cannot be edited or deleted, the `description` field is never used, and nothing
+  is saved — closing the app resets the list.
+- `flutter analyze` is clean and all 18 widget tests pass.
 - `pubspec.yaml` carries the placeholder description `"A new Flutter project."` and no
   dependencies beyond `cupertino_icons` and `flutter_lints`.
 - The Android application ID is still the placeholder `com.example.task_manager`.
 
 ## Next steps
 
-1. Let the checkboxes tick a task off. Because `Task` is immutable, this means replacing the task in
-   the list rather than editing it — a good reason to add a `copyWith` method.
+1. Let a task be deleted — a swipe (`Dismissible`) or a delete button in the tile's `trailing` slot.
 2. Tell the user *why* an empty title was refused, instead of silently doing nothing —
    `TextFormField` inside a `Form` gives you validation messages.
 3. Let the dialog capture the optional `description`, which the model already has and nothing sets.

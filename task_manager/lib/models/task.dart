@@ -2,11 +2,11 @@
 // Explained in docs/concepts/dart-basics.md
 
 class Task {
-  final String title;
-  final bool isCompleted;
-  final String? description; // ? means this one is allowed to be empty.
+  final String title; // final: set once, never reassigned.
+  bool isCompleted; // Not final — a task gets ticked off and on.
+  String? description; // ? means this one is allowed to be empty.
 
-  const Task({
+  Task({
     required this.title, // Must be given.
     this.description, // Optional.
     this.isCompleted = false, // New tasks start unfinished.

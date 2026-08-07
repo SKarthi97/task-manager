@@ -22,6 +22,10 @@ Every term in one place, one plain sentence each. Follow a link for the longer e
 | `itemBuilder` | The function Flutter calls to build row number *n*. | [lists](lists.md) |
 | `final` | Set once when the object is created, never reassigned. | [lists](lists.md) |
 | `static` | Belongs to the class itself, not to each instance. | [lists](lists.md) |
+| Callback | A function passed to a child so it can report an event upwards. | [callbacks](callbacks.md) |
+| `VoidCallback` | "A function taking nothing, returning nothing." | [callbacks](callbacks.md) |
+| `? :` | Dart's inline if, where a value is needed rather than statements. | [callbacks](callbacks.md) |
+| `copyWith` | Make a changed copy instead of editing an object in place. | [callbacks](callbacks.md) |
 | Model | A plain class that holds data, with no screen code in it. | [dart-basics](dart-basics.md) |
 | `String?` | A string that is allowed to be null (missing). | [dart-basics](dart-basics.md) |
 | `required` | The caller *must* pass this value. | [dart-basics](dart-basics.md) |

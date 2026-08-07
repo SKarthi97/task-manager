@@ -50,6 +50,9 @@ The tile is *given* its task by whoever builds it. It never reaches out for data
 the list, and never knows which position it is in. That is what makes it reusable — the same tile
 works in a search screen or a "completed" screen without a change.
 
+When the tile needs to *change* something, it does not reach up either — it is handed a function to
+call. See [callbacks](callbacks.md).
+
 ```text
 HomeScreen   owns the list of tasks
     │  passes one task down
