@@ -30,6 +30,10 @@ class _HomeScreenState extends State<HomeScreen> {
   // and lets this code read or clear it.
   final TextEditingController _taskController = TextEditingController();
 
+  // A key is a handle on a widget's state from outside that widget. This one is
+  // how the Add Task button reaches the Form below to ask it to validate.
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,15 +97,30 @@ class _HomeScreenState extends State<HomeScreen> {
         // a row of buttons.
         return AlertDialog(
           title: const Text('Add New Task'),
-          content: TextField(
-            // Wiring the field to the controller is what lets the buttons
-            // below read what was typed.
-            controller: _taskController,
-            // hintText is the grey placeholder shown while the field is empty.
-            decoration: const InputDecoration(hintText: 'Enter task title'),
-            // Put the cursor in the field straight away, so the user can type
-            // without tapping first.
-            autofocus: true,
+          // Form groups fields so they can be checked together. With one field
+          // it looks like overhead; with several, one validate() call does all.
+          content: Form(
+            key: _formKey,
+            // TextFormField is a TextField that knows how to validate itself.
+            child: TextFormField(
+              // Wiring the field to the controller is what lets the buttons
+              // below read what was typed.
+              controller: _taskController,
+              // hintText is the grey placeholder shown while the field is empty.
+              decoration: const InputDecoration(hintText: 'Enter task title'),
+              // Put the cursor in the field straight away, so the user can type
+              // without tapping first.
+              autofocus: true,
+              // A validator returns the message to show when input is bad, or
+              // null when it is fine. Returning null means "no complaint".
+              validator: (value) {
+                // trim() drops surrounding spaces, so "   " counts as empty.
+                if (value == null || value.trim().isEmpty) {
+                  return 'Task title is required';
+                }
+                return null;
+              },
+            ),
           ),
           // actions is the button row along the bottom.
           actions: [
@@ -116,10 +135,14 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                // trim() drops surrounding spaces, so "   " counts as empty.
-                if (_taskController.text.trim().isEmpty) {
-                  // Returning early leaves the dialog open, so the user can
-                  // see nothing happened and type something.
+                // validate() runs every validator in the Form and shows their
+                // messages. It returns false if any of them complained, and
+                // returning early then leaves the dialog open with the error on
+                // screen — so the user now sees *why* nothing happened.
+                //
+                // The ! says "this is definitely not null". Safe here because
+                // the Form is on screen whenever this button can be pressed.
+                if (!_formKey.currentState!.validate()) {
                   return;
                 }
 

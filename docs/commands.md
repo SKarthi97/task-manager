@@ -468,3 +468,34 @@ flutter test            # 24 tests passed
 The "middle task" and "same title" tests are the ones worth keeping in mind: a count-only test
 passes even when the wrong row is deleted. See
 [remove() matches by equality](concepts/callbacks.md#remove-matches-by-equality-not-position).
+
+## 19 — Explain *why* an empty title is refused
+
+The silent refusal became a real error message:
+
+| Before | After |
+| --- | --- |
+| `TextField` | `TextFormField` wrapped in a `Form` with a `GlobalKey` |
+| `if (_taskController.text.trim().isEmpty) return;` | `if (!_formKey.currentState!.validate()) return;` |
+| nothing happened, no explanation | **"Task title is required"** under the field |
+
+`flutter analyze` was clean and the suite passed on the first run — the two tests that touched the
+dialog had already been updated to `TextFormField` and to expect the message.
+
+Three tests were added for the cases where the message must be *absent*, taking the suite to 27:
+
+| Test | Asserts |
+| --- | --- |
+| no error is shown before the first attempt | an empty field alone does not trigger a complaint |
+| typing a valid title after an error clears it and adds | the error does not block the retry |
+| the error does not survive reopening the dialog | a fresh `Form` each time |
+
+```bash
+dart format lib test
+flutter analyze         # No issues found!
+flutter test            # 27 tests passed
+```
+
+A suite that only checked the message *appears* would still pass if the error got stuck on screen
+forever. See
+[when the message appears, and when it goes](concepts/dialogs-and-input.md#when-the-message-appears-and-when-it-goes).

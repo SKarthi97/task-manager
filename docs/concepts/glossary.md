@@ -34,6 +34,11 @@ Every term in one place, one plain sentence each. Follow a link for the longer e
 | `required` | The caller *must* pass this value. | [dart-basics](dart-basics.md) |
 | Named parameter | An argument passed by name, like `title: 'Buy milk'`. | [dart-basics](dart-basics.md) |
 | `TextField` | A box the user types into. | [dialogs-and-input](dialogs-and-input.md) |
+| `TextFormField` | A `TextField` that can validate itself and show an error. | [dialogs-and-input](dialogs-and-input.md) |
+| `Form` | Groups fields so one `validate()` call checks them all. | [dialogs-and-input](dialogs-and-input.md) |
+| `validator` | Returns the error message, or `null` when input is fine. | [dialogs-and-input](dialogs-and-input.md) |
+| `GlobalKey` | A handle on another widget's state from outside it. | [dialogs-and-input](dialogs-and-input.md) |
+| `!` | "This is definitely not null" — a promise that crashes if wrong. | [dialogs-and-input](dialogs-and-input.md) |
 | Controller | Your handle on a text field — reads and clears what was typed. | [dialogs-and-input](dialogs-and-input.md) |
 | `dispose` | Cleanup that runs when a screen is removed for good. | [dialogs-and-input](dialogs-and-input.md) |
 | `showDialog` | Puts a small screen on top of the current one. | [dialogs-and-input](dialogs-and-input.md) |
