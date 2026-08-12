@@ -12,7 +12,16 @@ class TaskTile extends StatelessWidget {
   // VoidCallback is shorthand for "takes nothing, returns nothing".
   final VoidCallback onToggle;
 
-  const TaskTile({super.key, required this.task, required this.onToggle});
+  // A second callback, for the same reason: the tile cannot remove a task from
+  // a list it does not own, so it just reports the tap.
+  final VoidCallback onDelete;
+
+  const TaskTile({
+    super.key,
+    required this.task,
+    required this.onToggle,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +44,17 @@ class TaskTile extends StatelessWidget {
               ? TextDecoration.lineThrough
               : TextDecoration.none,
         ),
+      ),
+
+      // trailing is the slot at the end of the row.
+      trailing: IconButton(
+        icon: const Icon(Icons.delete),
+        // Passed straight through: onDelete already takes no arguments and
+        // returns nothing, which is exactly what onPressed wants.
+        onPressed: onDelete,
+        // tooltip shows on hover or long-press, and is what screen readers
+        // announce — an icon on its own has no words to read out.
+        tooltip: 'Delete task',
       ),
     );
   }

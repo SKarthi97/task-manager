@@ -36,7 +36,7 @@ shape with named slots — and the standard height, spacing and tap behaviour th
 | `leading` | something at the start | the `Checkbox` |
 | `title` | the main text | the task title |
 | `subtitle` | smaller text below | *unused — the description could go here* |
-| `trailing` | something at the end | *unused — a delete button could go here* |
+| `trailing` | something at the end | the delete `IconButton` |
 
 ## Data goes down; the child does not fetch it
 

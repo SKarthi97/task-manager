@@ -436,3 +436,35 @@ flutter test            # 18 tests passed
 ```
 
 New concepts are in [concepts/callbacks.md](concepts/callbacks.md).
+
+## 18 — Let a task be deleted
+
+A delete button went into the tile's `trailing` slot — the slot noted as unused back in
+[concepts/lists.md](concepts/lists.md):
+
+| File | Change |
+| --- | --- |
+| [`widgets/task_tile.dart`](../task_manager/lib/widgets/task_tile.dart) | a second callback, `onDelete`, on an `IconButton` with a tooltip |
+| [`screens/home_screen.dart`](../task_manager/lib/screens/home_screen.dart) | passes `onDelete`, calling `tasks.remove(task)` inside `setState` |
+
+This time `flutter analyze` was clean and all 18 existing tests passed on the first run — the
+feature worked, but **nothing tested it**. Six tests were added, taking the suite to 24:
+
+| Test | Asserts |
+| --- | --- |
+| every row has a delete button | one delete icon per task |
+| tapping delete removes that task | one fewer tile, and that title is gone |
+| deleting the middle task leaves the others in order | the outer two survive — catches a wrong-index delete |
+| a newly added task can be deleted again | add through the dialog, then delete it |
+| two tasks with the same title delete one at a time | duplicates are separate objects, so only one goes |
+| deleting every task leaves an empty list | zero tiles, and no empty-state message yet |
+
+```bash
+dart format lib test
+flutter analyze         # No issues found!
+flutter test            # 24 tests passed
+```
+
+The "middle task" and "same title" tests are the ones worth keeping in mind: a count-only test
+passes even when the wrong row is deleted. See
+[remove() matches by equality](concepts/callbacks.md#remove-matches-by-equality-not-position).

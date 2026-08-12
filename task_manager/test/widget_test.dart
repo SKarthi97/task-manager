@@ -131,6 +131,93 @@ void main() {
       expect(box.value, isTrue);
     });
 
+    testWidgets('every row has a delete button', (WidgetTester tester) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      expect(find.byIcon(Icons.delete), findsNWidgets(initialTitles.length));
+    });
+
+    testWidgets('tapping delete removes that task', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byIcon(Icons.delete).first);
+      await tester.pump();
+
+      expect(find.byType(TaskTile), findsNWidgets(initialTitles.length - 1));
+      expect(find.text(initialTitles.first), findsNothing);
+    });
+
+    testWidgets('deleting the middle task leaves the others in order', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byIcon(Icons.delete).at(1));
+      await tester.pump();
+
+      expect(find.text(initialTitles[1]), findsNothing); // the one tapped
+      expect(find.text(initialTitles[0]), findsOneWidget); // untouched
+      expect(find.text(initialTitles[2]), findsOneWidget); // untouched
+    });
+
+    testWidgets('a newly added task can be deleted again', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Delete me');
+      await tester.tap(find.text('Add Task'));
+      await tester.pumpAndSettle();
+      expect(find.text('Delete me'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.delete).last);
+      await tester.pump();
+
+      expect(find.text('Delete me'), findsNothing);
+      expect(find.byType(TaskTile), findsNWidgets(initialTitles.length));
+    });
+
+    testWidgets('two tasks with the same title delete one at a time', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      // Add the same title twice. They are separate objects, so removing one
+      // must leave the other — this is what identity-based remove() guarantees.
+      for (int i = 0; i < 2; i++) {
+        await tester.tap(find.byType(FloatingActionButton));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), 'Duplicate');
+        await tester.tap(find.text('Add Task'));
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('Duplicate'), findsNWidgets(2));
+
+      await tester.tap(find.byIcon(Icons.delete).last);
+      await tester.pump();
+
+      expect(find.text('Duplicate'), findsOneWidget);
+    });
+
+    testWidgets('deleting every task leaves an empty list', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      for (int i = 0; i < initialTitles.length; i++) {
+        await tester.tap(find.byIcon(Icons.delete).first);
+        await tester.pump();
+      }
+
+      expect(find.byType(TaskTile), findsNothing);
+      // Note: no empty-state message yet — the screen is simply blank.
+      expect(find.byType(ListView), findsOneWidget);
+    });
+
     testWidgets('builds the expected Material scaffolding', (
       WidgetTester tester,
     ) async {

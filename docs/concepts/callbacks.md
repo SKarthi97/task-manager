@@ -62,6 +62,65 @@ TaskTile                          displays it, calls onToggle()
    └──── "the box was tapped" ────┘  (…event up)
 ```
 
+## More than one callback
+
+Deleting works the same way, for the same reason — the tile cannot remove a task from a list it does
+not own:
+
+```dart
+final VoidCallback onToggle;   // "the box was tapped"
+final VoidCallback onDelete;   // "the bin was tapped"
+```
+
+Each is a separate, named event. The tile does not know that one ticks a task and the other destroys
+it; it only reports which button was pressed. Everything that *decides* stays in the screen.
+
+`onDelete` can be handed to `IconButton` directly:
+
+```dart
+IconButton(
+  icon: const Icon(Icons.delete),
+  onPressed: onDelete,        // no wrapper needed
+  tooltip: 'Delete task',
+)
+```
+
+No `() { onDelete(); }` wrapper, because `onDelete` already has exactly the shape `onPressed` wants —
+takes nothing, returns nothing. (The checkbox needs the wrapper only because it insists on passing
+the new value.)
+
+> **`tooltip` is not decoration.** An icon has no words in it, so screen readers have nothing to
+> announce without one. It also appears on hover and long-press. Any icon-only button should have it.
+
+## `remove()` matches by equality, not position
+
+```dart
+tasks.remove(task);
+```
+
+`remove()` deletes the first element that is `==` to what you give it. `Task` does not define `==`,
+so Dart falls back to **identity** — is this the same object? Since every `Task` is a separate
+object, the right one is removed even when two tasks share a title.
+
+That is correct today, and it is worth knowing *why* it is correct, because it stops being true the
+moment someone gives `Task` value equality:
+
+```dart
+// If Task ever defines == based on title...
+bool operator ==(Object other) => other is Task && other.title == title;
+// ...then remove() deletes the FIRST task with that title, not the one tapped.
+```
+
+Two ways to be immune to that:
+
+| Approach | Why it is safe |
+| --- | --- |
+| `tasks.removeAt(index)` | position is unambiguous — no equality involved |
+| give each `Task` a unique `id` | identity is explicit rather than accidental |
+
+An `id` is the usual answer once tasks are saved and reloaded, because a reloaded task is a
+different object from the one that was saved.
+
 ## `_` for an argument you do not need
 
 `Checkbox` hands its callback the new value, but the tile does not use it — the parent flips the
@@ -132,6 +191,23 @@ The strikethrough is checked by reading the style off the `Text` widget:
 final Text title = tester.widget(find.text('Learn Flutter widgets'));
 expect(title.style?.decoration, TextDecoration.lineThrough);
 ```
+
+## Picking one widget out of several
+
+When a finder matches many widgets — three delete buttons, say — `tap` needs to know which one:
+
+| Written as | Taps |
+| --- | --- |
+| `find.byIcon(Icons.delete).first` | the first row |
+| `find.byIcon(Icons.delete).last` | the last row |
+| `find.byIcon(Icons.delete).at(1)` | the second row (counting from 0) |
+
+Without one of these, `tap` throws — "found 3 widgets, expected 1" — which is a useful error rather
+than a silent guess.
+
+The delete tests lean on this to check the *right* task was removed: delete the middle one, then
+assert the outer two are still there. Deleting by the wrong index passes a naive count-only test and
+fails this one.
 
 ---
 

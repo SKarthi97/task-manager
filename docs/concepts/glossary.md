@@ -23,6 +23,9 @@ Every term in one place, one plain sentence each. Follow a link for the longer e
 | `final` | Set once when the object is created, never reassigned. | [lists](lists.md) |
 | `static` | Belongs to the class itself, not to each instance. | [lists](lists.md) |
 | Callback | A function passed to a child so it can report an event upwards. | [callbacks](callbacks.md) |
+| `IconButton` | A tappable icon. Give it a `tooltip` so it has words. | [callbacks](callbacks.md) |
+| `tooltip` | Text shown on hover, and read out by screen readers. | [callbacks](callbacks.md) |
+| `.first` / `.last` / `.at(n)` | Pick one widget when a finder matches several. | [callbacks](callbacks.md) |
 | `VoidCallback` | "A function taking nothing, returning nothing." | [callbacks](callbacks.md) |
 | `? :` | Dart's inline if, where a value is needed rather than statements. | [callbacks](callbacks.md) |
 | `copyWith` | Make a changed copy instead of editing an object in place. | [callbacks](callbacks.md) |
