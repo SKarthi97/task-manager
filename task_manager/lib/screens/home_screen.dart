@@ -48,6 +48,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 task.isCompleted = !task.isCompleted;
               });
             },
+
+            onDelete: () {
+              setState(() {
+                // remove() matches by ==, which Task does not define, so it
+                // falls back to identity — it removes this exact object, even
+                // if another task has the same title.
+                tasks.remove(task);
+              });
+            },
           );
         },
       ),
