@@ -254,7 +254,7 @@ void main() {
 
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(find.text('Add New Task'), findsOneWidget);
-      expect(find.byType(TextField), findsOneWidget);
+      expect(find.byType(TextFormField), findsOneWidget);
       expect(find.text('Enter task title'), findsOneWidget); // the hint
 
       // Nothing added yet — the list is untouched while the dialog is open.
@@ -322,8 +322,64 @@ void main() {
       await tester.tap(find.text('Add Task'));
       await tester.pumpAndSettle();
 
+      expect(find.text('Task title is required'), findsOneWidget);
       expect(find.byType(AlertDialog), findsOneWidget); // still open
       expect(find.byType(TaskTile), findsNWidgets(initialTitles.length));
+    });
+
+    testWidgets('no error is shown before the first attempt', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      // The field is empty, but the user has not tried yet — nagging before an
+      // attempt is the classic validation annoyance.
+      expect(find.text('Task title is required'), findsNothing);
+    });
+
+    testWidgets('typing a valid title after an error clears it and adds', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      // Fail once.
+      await tester.tap(find.text('Add Task'));
+      await tester.pumpAndSettle();
+      expect(find.text('Task title is required'), findsOneWidget);
+
+      // Then get it right — the error must not block the retry.
+      await tester.enterText(find.byType(TextFormField), 'Second attempt');
+      await tester.tap(find.text('Add Task'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Task title is required'), findsNothing);
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('Second attempt'), findsOneWidget);
+    });
+
+    testWidgets('the error does not survive reopening the dialog', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add Task')); // fails
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      // A fresh Form each time, so the old complaint is gone.
+      expect(find.text('Task title is required'), findsNothing);
     });
 
     testWidgets('the field is empty again on reopening', (
