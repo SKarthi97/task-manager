@@ -594,3 +594,37 @@ flutter test            # 35 tests passed
 
 New concepts are in
 [an empty list is a different screen](concepts/lists.md#an-empty-list-is-a-different-screen).
+
+## 22 — Add unit tests for the `Task` model
+
+The first tests that build no widgets at all:
+[`test/models/task_test.dart`](../task_manager/test/models/task_test.dart), mirroring
+`lib/models/task.dart`.
+
+```bash
+flutter test test/models/task_test.dart
+```
+
+`flutter analyze` was clean and everything passed first time — a model with no Flutter import is easy
+to test, which is the payoff for keeping it plain data.
+
+Six tests covered construction and defaults. Three more were added to write down decisions the code
+relies on but nothing checked:
+
+| Test | Records |
+| --- | --- |
+| the title cannot be changed | `title` is `final`; the assignment is a compile error, kept as a comment |
+| two tasks with the same values are not equal | `Task` has no `==`, so comparison is by identity — which is what `tasks.remove(task)` depends on |
+| an empty description is stored as given | the model does not tidy input, so `''` can end up where `null` was meant |
+
+The last two will fail if someone adds value equality or input normalising — which is the point. A
+failing test then points straight at the code that assumed otherwise.
+
+```bash
+dart format lib test
+flutter analyze         # No issues found!
+flutter test            # 44 tests passed (35 widget + 9 unit)
+```
+
+New concepts are in
+[unit tests: test, not testWidgets](concepts/testing.md#unit-tests-test-not-testwidgets).
