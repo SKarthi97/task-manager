@@ -52,6 +52,31 @@ the fix is always "which file defines this, and have I imported it?"
 (Dart can forward names along, using `export 'screens/home_screen.dart';` in a single "barrel" file.
 Worth doing once there are many screens; one plain import per file is clearer while there are few.)
 
+## Check the branch is current before editing
+
+A branch that is behind its remote gives you *stale files on disk*, and an edit written on top of them
+quietly reverts whatever you were missing.
+
+```bash
+git branch -vv
+#   feature/project-setup  b5d19ec [origin/feature/project-setup: behind 2]
+#                                                                 ^^^^^^^^
+```
+
+That happened here: `home_screen.dart` was two commits old, so an edit to it would have deleted the
+description feature that had already been merged. Committing it would have looked like a deliberate
+removal.
+
+Two habits that avoid it:
+
+```bash
+git pull                              # before starting work on a branch
+git checkout -b new-work origin/base  # or branch from the remote ref directly
+```
+
+If you have already made the edit against a stale file, do not carry it forward — branch from the
+current ref and re-apply the change on top of the up-to-date file.
+
 ## Line endings, and why files "changed" without changing
 
 Windows ends lines with two characters (CRLF); Linux and macOS use one (LF). Flutter, running in

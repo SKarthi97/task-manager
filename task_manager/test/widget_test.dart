@@ -219,8 +219,64 @@ void main() {
       }
 
       expect(find.byType(TaskTile), findsNothing);
-      // Note: no empty-state message yet — the screen is simply blank.
+
+      // The list is replaced by the empty state, not left as a blank ListView.
+      expect(find.byType(ListView), findsNothing);
+      expect(find.text('No tasks yet'), findsOneWidget);
+      expect(find.text('Add a task using the + button.'), findsOneWidget);
+      expect(find.byIcon(Icons.task_alt), findsOneWidget);
+    });
+
+    testWidgets('the empty state is hidden while tasks exist', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      expect(find.text('No tasks yet'), findsNothing);
+      expect(find.byIcon(Icons.task_alt), findsNothing);
       expect(find.byType(ListView), findsOneWidget);
+    });
+
+    testWidgets('adding a task replaces the empty state with the list', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      // Empty the list first.
+      for (int i = 0; i < initialTitles.length; i++) {
+        await tester.tap(find.byIcon(Icons.delete).first);
+        await tester.pump();
+      }
+      expect(find.text('No tasks yet'), findsOneWidget);
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(titleField, 'Back from empty');
+      await tester.tap(find.text('Add Task'));
+      await tester.pumpAndSettle();
+
+      // The swap goes both ways.
+      expect(find.text('No tasks yet'), findsNothing);
+      expect(find.byType(ListView), findsOneWidget);
+      expect(find.text('Back from empty'), findsOneWidget);
+    });
+
+    testWidgets('the add button stays available on the empty state', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      for (int i = 0; i < initialTitles.length; i++) {
+        await tester.tap(find.byIcon(Icons.delete).first);
+        await tester.pump();
+      }
+
+      // The empty state tells the user to press "+", so it had better be there.
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+      final FloatingActionButton fab = tester.widget(
+        find.byType(FloatingActionButton),
+      );
+      expect(fab.onPressed, isNotNull);
     });
 
     testWidgets('builds the expected Material scaffolding', (

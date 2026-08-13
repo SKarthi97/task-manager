@@ -50,6 +50,47 @@ subtitle: task.description == null || task.description!.isEmpty
 An empty `Text('')` would still reserve space and leave a visible gap. `null` means the slot does not
 exist.
 
+## An empty list is a different screen
+
+A list with nothing in it should not be a blank rectangle. The body picks between two whole widgets:
+
+```dart
+body: tasks.isEmpty
+    ? const Center(child: Column(...))    // the empty state
+    : ListView.builder(...),              // the list
+```
+
+This is [`? :`](callbacks.md) again, but choosing a *widget* rather than a value — and it is the normal
+way to switch layouts in Flutter, because `build` has to return one widget either way.
+
+A good empty state answers two questions:
+
+| | Here |
+| --- | --- |
+| What is missing? | *"No tasks yet"* |
+| What do I do about it? | *"Add a task using the + button."* |
+
+The icon carries neither, but it stops the screen looking broken. Note the "+" button lives on the
+`Scaffold`, not inside the body — so it stays put through the swap, which is what makes that second
+line true.
+
+### Testing a screen that swaps
+
+Every assertion has a mirror image, and the pairs are what make the test meaningful:
+
+```dart
+// with tasks
+expect(find.text('No tasks yet'), findsNothing);
+expect(find.byType(ListView), findsOneWidget);
+
+// after deleting them all
+expect(find.text('No tasks yet'), findsOneWidget);
+expect(find.byType(ListView), findsNothing);
+```
+
+Checking only that the message appears would pass even if the empty state were showing *all the time*,
+underneath the list.
+
 ## Data goes down; the child does not fetch it
 
 `TaskTile` holds one field:
