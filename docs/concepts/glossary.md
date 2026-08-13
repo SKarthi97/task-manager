@@ -22,6 +22,8 @@ Every term in one place, one plain sentence each. Follow a link for the longer e
 | `itemBuilder` | The function Flutter calls to build row number *n*. | [lists](lists.md) |
 | `final` | Set once when the object is created, never reassigned. | [lists](lists.md) |
 | `static` | Belongs to the class itself, not to each instance. | [lists](lists.md) |
+| Empty state | What a screen shows when there is nothing to list. | [lists](lists.md) |
+| `isEmpty` | True when a list or string has nothing in it. | [lists](lists.md) |
 | Callback | A function passed to a child so it can report an event upwards. | [callbacks](callbacks.md) |
 | `IconButton` | A tappable icon. Give it a `tooltip` so it has words. | [callbacks](callbacks.md) |
 | `tooltip` | Text shown on hover, and read out by screen readers. | [callbacks](callbacks.md) |

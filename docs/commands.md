@@ -543,3 +543,54 @@ flutter test            # 32 tests passed
 New concepts are in
 [a second field, and why Form paid off](concepts/dialogs-and-input.md#a-second-field-and-why-form-paid-off)
 and [Key — a label a test can search for](concepts/dialogs-and-input.md#key--a-label-a-test-can-search-for).
+
+## 21 — Bring back the empty state
+
+Deleting every task used to leave a blank screen. The body now picks between two widgets:
+
+```dart
+body: tasks.isEmpty
+    ? const Center(child: Column(...))   // icon + "No tasks yet" + what to do
+    : ListView.builder(...),
+```
+
+**A near-miss worth recording.** The local `feature/project-setup` branch was two commits behind
+`origin`, so the working copy of `home_screen.dart` was the version from *before* the description
+feature. Committing the edit as written would have silently deleted work already merged in pull
+request #11. What caught it:
+
+```bash
+git branch -vv
+#   feature/project-setup  b5d19ec [origin/feature/project-setup: behind 2]
+```
+
+The fix was to branch from `origin/feature/project-setup` and re-apply the change on top of the
+current file, rather than carrying the stale one forward. **`git branch -vv` before starting work is
+the cheap habit that avoids this.**
+
+`flutter analyze` was clean; one test failed, and it was right to:
+
+```text
+Expected: exactly one matching candidate
+  Actual: _TypeWidgetFinder:<Found 0 widgets with type "ListView": []>
+```
+
+That test asserted a `ListView` still existed after deleting everything — true when the list was
+always built, wrong now the empty state replaces it. Updated, and three tests added, taking the suite
+to 35:
+
+| Test | Asserts |
+| --- | --- |
+| deleting every task leaves an empty list *(updated)* | no `ListView`; the message, hint and icon are shown |
+| the empty state is hidden while tasks exist | the mirror image — message absent, `ListView` present |
+| adding a task replaces the empty state with the list | the swap works in both directions |
+| the add button stays available on the empty state | the screen says "press +", so it must be there |
+
+```bash
+dart format lib test
+flutter analyze         # No issues found!
+flutter test            # 35 tests passed
+```
+
+New concepts are in
+[an empty list is a different screen](concepts/lists.md#an-empty-list-is-a-different-screen).

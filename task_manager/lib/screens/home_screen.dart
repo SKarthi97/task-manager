@@ -39,32 +39,51 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Task Manager")),
-      // Builds only the rows on screen, however long the list gets.
-      body: ListView.builder(
-        itemCount: tasks.length,
-        itemBuilder: (context, index) {
-          final task = tasks[index];
-          return TaskTile(
-            task: task,
-            // The tile reports the tap; this screen decides what it means.
-            // The data lives here, so the change has to happen here too.
-            onToggle: () {
-              setState(() {
-                task.isCompleted = !task.isCompleted;
-              });
-            },
-
-            onDelete: () {
-              setState(() {
-                // remove() matches by ==, which Task does not define, so it
-                // falls back to identity — it removes this exact object, even
-                // if another task has the same title.
-                tasks.remove(task);
-              });
-            },
-          );
-        },
-      ),
+      // An empty list and a full one are different screens, so the body picks
+      // between them. Deleting the last task swaps one for the other.
+      body: tasks.isEmpty
+          ? const Center(
+              child: Column(
+                // Only as tall as its children, so the group stays centred.
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // An empty state says what is missing and what to do next.
+                  Icon(Icons.task_alt, size: 64),
+                  SizedBox(height: 16),
+                  Text(
+                    'No tasks yet',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text('Add a task using the + button.'),
+                ],
+              ),
+            )
+          // Builds only the rows on screen, however long the list gets.
+          : ListView.builder(
+              itemCount: tasks.length,
+              itemBuilder: (context, index) {
+                final task = tasks[index];
+                return TaskTile(
+                  task: task,
+                  // The tile reports the tap; this screen decides what it means.
+                  // The data lives here, so the change has to happen here too.
+                  onToggle: () {
+                    setState(() {
+                      task.isCompleted = !task.isCompleted;
+                    });
+                  },
+                  onDelete: () {
+                    setState(() {
+                      // remove() matches by ==, which Task does not define, so
+                      // it falls back to identity — it removes this exact
+                      // object, even if another task has the same title.
+                      tasks.remove(task);
+                    });
+                  },
+                );
+              },
+            ),
       floatingActionButton: FloatingActionButton(
         // The button no longer adds a task itself — it asks for the title first.
         onPressed: () {
