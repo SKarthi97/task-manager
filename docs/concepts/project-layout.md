@@ -21,6 +21,18 @@ lib/
 The `screens/`, `widgets/`, `models/` split is a convention people follow, not a rule the tools
 enforce — but following it means anyone can guess where a file lives.
 
+`test/` mirrors that shape, so a file's test is where you would guess:
+
+```text
+test/
+├── models/
+│   └── task_test.dart     unit tests for lib/models/task.dart
+└── widget_test.dart       widget tests for the screen
+```
+
+Here the tooling *does* care about one thing: `flutter test` finds files ending in `_test.dart`. A file
+named `task_tests.dart` is never run, and nothing warns you.
+
 ## Package-relative imports
 
 Files reach each other as `package:task_manager/main.dart` — `task_manager` being the `name:` in

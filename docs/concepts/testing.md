@@ -12,6 +12,67 @@ Explains [`test/widget_test.dart`](../../task_manager/test/widget_test.dart).
 | Widget test | one widget tree, headless — no device needed | fast |
 | Integration test | the whole app on a real device or browser | slow |
 
+## Unit tests: `test`, not `testWidgets`
+
+A unit test checks plain Dart. No widget tree, no `tester`, no pumping:
+
+```dart
+test('new task is incomplete by default', () {
+  final task = Task(title: 'Learn Flutter');
+
+  expect(task.isCompleted, isFalse);
+});
+```
+
+That is the whole thing — build the object, check it. This is possible only because `Task` is a
+[model](dart-basics.md): plain data with no Flutter import. A class that reached for widgets could not
+be tested this way.
+
+| | `test` | `testWidgets` |
+| --- | --- | --- |
+| Gives you | nothing — just a function body | a `WidgetTester` |
+| Needs pumping | no | yes |
+| Speed | instant | milliseconds |
+| Tests | logic and data | what appears on screen |
+
+### The test folder mirrors `lib`
+
+```text
+lib/models/task.dart   →   test/models/task_test.dart
+lib/widgets/...        →   test/widgets/..._test.dart
+```
+
+The `_test.dart` suffix is not decoration: `flutter test` finds files by that name. A file called
+`task_tests.dart` or `test_task.dart` is silently never run.
+
+### Tests as documentation
+
+Two of the `Task` tests exist to *pin down* behaviour rather than to catch a bug:
+
+```dart
+test('two tasks with the same values are not equal', () {
+  expect(Task(title: 'A') == Task(title: 'A'), isFalse);
+});
+```
+
+`Task` defines no `==`, so Dart compares identity. That is exactly what the delete button depends on —
+see [remove() matches by equality](callbacks.md#remove-matches-by-equality-not-position). Writing it
+down means that if someone adds value equality later, this test fails and points straight at the code
+that would break.
+
+```dart
+test('an empty description is stored as given, not turned into null', () {
+  expect(Task(title: 'A', description: '').description, '');
+});
+```
+
+This one records a known rough edge — the model does not tidy its input, which is why `''` can end up
+stored where `null` was meant. When that gets fixed, the failing test is the reminder to update the
+places that work around it.
+
+A test that captures a decision is worth writing even when nothing is broken. It turns "we think it
+works this way" into something the toolchain checks.
+
 ## `testWidgets` and "pumping"
 
 Widget tests use `testWidgets`, not `test`, and get a `WidgetTester` to work with.

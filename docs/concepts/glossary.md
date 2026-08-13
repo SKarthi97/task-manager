@@ -50,6 +50,9 @@ Every term in one place, one plain sentence each. Follow a link for the longer e
 | `showDialog` | Puts a small screen on top of the current one. | [dialogs-and-input](dialogs-and-input.md) |
 | `Navigator.pop` | Closes a dialog, or goes back a screen — the same thing. | [dialogs-and-input](dialogs-and-input.md) |
 | `pumpAndSettle` | In a test, keep drawing until animations stop. | [dialogs-and-input](dialogs-and-input.md) |
+| Unit test | A test of plain Dart — no widgets, no pumping. | [testing](testing.md) |
+| `test` vs `testWidgets` | `test` for logic; `testWidgets` when there is a screen. | [testing](testing.md) |
+| `_test.dart` | The suffix `flutter test` looks for. Miss it and the file never runs. | [testing](testing.md) |
 | Widget test | A test that builds the screen in memory and checks what it shows. | [testing](testing.md) |
 | Finder | The part of a test that says *which* widget to look for. | [testing](testing.md) |
 | Matcher | The part of a test that says *how many* you expected. | [testing](testing.md) |

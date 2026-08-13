@@ -19,7 +19,7 @@ needed following up.
 | [concepts/state.md](concepts/state.md) | `StatefulWidget`, `setState`, and testing a tap |
 | [concepts/dialogs-and-input.md](concepts/dialogs-and-input.md) | Controllers, `dispose`, `showDialog`, validation, `Key`s for tests |
 | [concepts/callbacks.md](concepts/callbacks.md) | Data down / events up, `VoidCallback`, `? :`, mutable vs `copyWith` |
-| [concepts/testing.md](concepts/testing.md) | Widget tests, finders and matchers, why failing tests are good |
+| [concepts/testing.md](concepts/testing.md) | Unit vs widget tests, finders and matchers, tests as documentation |
 | [concepts/project-layout.md](concepts/project-layout.md) | Where files live, imports, stale branches, line endings |
 
 Source files carry only brief comments and point at the file that explains them.
@@ -52,7 +52,7 @@ Source files carry only brief comments and point at the file that explains them.
   closing the app resets the list.
 - An empty description is stored as `''` rather than `null`, so there are two ways to say "none" —
   see [an empty box and a missing value](concepts/dialogs-and-input.md#an-empty-box-and-a-missing-value-are-not-the-same-thing).
-- `flutter analyze` is clean and all 35 widget tests pass.
+- `flutter analyze` is clean and all 44 tests pass: 35 widget tests and 9 unit tests for `Task`.
 - `pubspec.yaml` carries the placeholder description `"A new Flutter project."` and no
   dependencies beyond `cupertino_icons` and `flutter_lints`.
 - The Android application ID is still the placeholder `com.example.task_manager`.
@@ -65,12 +65,11 @@ Source files carry only brief comments and point at the file that explains them.
    and permanent.
 2. Store an empty description as `null` rather than `''`, so "no description" has one meaning.
 3. Let a task be edited — the add dialog is most of an edit dialog already, given both fields exist.
-4. Add a unit test for `Task` (no widgets needed) alongside the widget tests.
-5. Save the list so it survives a restart. At that point tasks need an `id` — see
+4. Save the list so it survives a restart. At that point tasks need an `id` — see
    [remove() matches by equality](concepts/callbacks.md#remove-matches-by-equality-not-position).
 
 **Housekeeping, still outstanding from setup**
 
-6. Install the Android SDK and register it with `flutter config --android-sdk <path>`.
-7. Update `pubspec.yaml` (description, and dependencies for state management + saving).
-8. Replace the Android placeholder application ID `com.example.task_manager`.
+5. Install the Android SDK and register it with `flutter config --android-sdk <path>`.
+6. Update `pubspec.yaml` (description, and dependencies for state management + saving).
+7. Replace the Android placeholder application ID `com.example.task_manager`.
