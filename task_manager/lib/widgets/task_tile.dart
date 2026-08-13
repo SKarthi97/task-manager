@@ -45,6 +45,9 @@ class TaskTile extends StatelessWidget {
               : TextDecoration.none,
         ),
       ),
+      subtitle: task.description == null || task.description!.isEmpty
+          ? null
+          : Text(task.description!),
 
       // trailing is the slot at the end of the row.
       trailing: IconButton(

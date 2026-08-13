@@ -17,7 +17,7 @@ needed following up.
 | [concepts/dart-basics.md](concepts/dart-basics.md) | Models, `?` for null, named parameters and `required` |
 | [concepts/lists.md](concepts/lists.md) | `ListView.builder`, `ListTile`, passing data down, `final`/`const` |
 | [concepts/state.md](concepts/state.md) | `StatefulWidget`, `setState`, and testing a tap |
-| [concepts/dialogs-and-input.md](concepts/dialogs-and-input.md) | `TextField` controllers, `dispose`, `showDialog`, `Navigator.pop` |
+| [concepts/dialogs-and-input.md](concepts/dialogs-and-input.md) | Controllers, `dispose`, `showDialog`, validation, `Key`s for tests |
 | [concepts/callbacks.md](concepts/callbacks.md) | Data down / events up, `VoidCallback`, `? :`, mutable vs `copyWith` |
 | [concepts/testing.md](concepts/testing.md) | Widget tests, finders and matchers, why failing tests are good |
 | [concepts/project-layout.md](concepts/project-layout.md) | Where files live, imports, line endings |
@@ -43,12 +43,15 @@ Source files carry only brief comments and point at the file that explains them.
 
 - The screen shows a scrolling list of three starting tasks. The "+" button opens a dialog asking
   for a title; typing one and pressing **Add Task** adds it, **Cancel** discards it, and an empty
-  title is refused with the message *"Task title is required"*.
+  title is refused with the message *"Task title is required"*. A second, optional field captures a
+  description, which appears as a second line on the row.
 - Tapping a task's checkbox ticks it off and crosses out the title; tapping again undoes it.
 - Each row has a delete button that removes that task.
-- Still to do: tasks cannot be edited, deletion is instant with no undo, the `description` field is
-  never used, and nothing is saved — closing the app resets the list.
-- `flutter analyze` is clean and all 27 widget tests pass.
+- Still to do: tasks cannot be edited, deletion is instant with no undo, and nothing is saved —
+  closing the app resets the list.
+- An empty description is stored as `''` rather than `null`, so there are two ways to say "none" —
+  see [an empty box and a missing value](concepts/dialogs-and-input.md#an-empty-box-and-a-missing-value-are-not-the-same-thing).
+- `flutter analyze` is clean and all 32 widget tests pass.
 - `pubspec.yaml` carries the placeholder description `"A new Flutter project."` and no
   dependencies beyond `cupertino_icons` and `flutter_lints`.
 - The Android application ID is still the placeholder `com.example.task_manager`.
@@ -60,15 +63,14 @@ Source files carry only brief comments and point at the file that explains them.
 1. Bring back an empty-state message — deleting every task now leaves a blank screen.
 2. Offer an undo after deleting, with a `SnackBar` and its `action:`. Deletion is currently instant
    and permanent.
-3. Let the dialog capture the optional `description`, which the model already has and nothing sets.
-   The `Form` is already in place, so a second field is now cheap — and `subtitle` on the `ListTile`
-   is still free for showing it.
-4. Add a unit test for `Task` (no widgets needed) alongside the widget tests.
-5. Save the list so it survives a restart. At that point tasks need an `id` — see
+3. Store an empty description as `null` rather than `''`, so "no description" has one meaning.
+4. Let a task be edited — the add dialog is most of an edit dialog already, given both fields exist.
+5. Add a unit test for `Task` (no widgets needed) alongside the widget tests.
+6. Save the list so it survives a restart. At that point tasks need an `id` — see
    [remove() matches by equality](concepts/callbacks.md#remove-matches-by-equality-not-position).
 
 **Housekeeping, still outstanding from setup**
 
-6. Install the Android SDK and register it with `flutter config --android-sdk <path>`.
-7. Update `pubspec.yaml` (description, and dependencies for state management + saving).
-8. Replace the Android placeholder application ID `com.example.task_manager`.
+7. Install the Android SDK and register it with `flutter config --android-sdk <path>`.
+8. Update `pubspec.yaml` (description, and dependencies for state management + saving).
+9. Replace the Android placeholder application ID `com.example.task_manager`.
