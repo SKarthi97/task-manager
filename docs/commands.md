@@ -499,3 +499,47 @@ flutter test            # 27 tests passed
 A suite that only checked the message *appears* would still pass if the error got stuck on screen
 forever. See
 [when the message appears, and when it goes](concepts/dialogs-and-input.md#when-the-message-appears-and-when-it-goes).
+
+## 20 — Capture the optional description
+
+The dialog grew a second field, and the row grew a second line:
+
+| File | Change |
+| --- | --- |
+| [`screens/home_screen.dart`](../task_manager/lib/screens/home_screen.dart) | a second controller and `TextFormField` (no validator — it is optional), both fields in a `Column` inside the existing `Form` |
+| [`widgets/task_tile.dart`](../task_manager/lib/widgets/task_tile.dart) | `subtitle` shows the description, or is `null` when there is none |
+
+`flutter analyze` was clean, but **ten tests failed** — with two fields on screen,
+"find the text field" no longer identifies one:
+
+```text
+Expected: exactly one matching candidate
+  Actual: _TypeWidgetFinder:<Found 2 widgets with type "TextFormField">
+   Which: is too many
+```
+
+The fix was a `Key` on each field, and a named `Finder` per field in the test file:
+
+```dart
+final Finder titleField = find.byKey(const Key('titleField'));
+final Finder descriptionField = find.byKey(const Key('descriptionField'));
+```
+
+Every `enterText` then says which field it means. Four tests were added, taking the suite to 32:
+
+| Test | Asserts |
+| --- | --- |
+| a description is shown under the title | both strings appear, and the description is inside the `TaskTile` |
+| the description is optional | leaving it blank still adds the task, and `subtitle` is `null` |
+| a whitespace-only description shows no subtitle | `'     '` produces no second line |
+| the description is cleared on reopening | nothing carries over from a cancelled dialog |
+
+```bash
+dart format lib test
+flutter analyze         # No issues found!
+flutter test            # 32 tests passed
+```
+
+New concepts are in
+[a second field, and why Form paid off](concepts/dialogs-and-input.md#a-second-field-and-why-form-paid-off)
+and [Key — a label a test can search for](concepts/dialogs-and-input.md#key--a-label-a-test-can-search-for).

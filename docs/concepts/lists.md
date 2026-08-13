@@ -35,8 +35,20 @@ shape with named slots — and the standard height, spacing and tap behaviour th
 | --- | --- | --- |
 | `leading` | something at the start | the `Checkbox` |
 | `title` | the main text | the task title |
-| `subtitle` | smaller text below | *unused — the description could go here* |
+| `subtitle` | smaller text below | the description, when there is one |
 | `trailing` | something at the end | the delete `IconButton` |
+
+Passing `null` to a slot leaves it out entirely, which is how the row shows no second line when a task
+has no description:
+
+```dart
+subtitle: task.description == null || task.description!.isEmpty
+    ? null                     // no subtitle at all, not an empty one
+    : Text(task.description!),
+```
+
+An empty `Text('')` would still reserve space and leave a visible gap. `null` means the slot does not
+exist.
 
 ## Data goes down; the child does not fetch it
 

@@ -29,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // A controller is the handle on a text field: it holds what has been typed,
   // and lets this code read or clear it.
   final TextEditingController _taskController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
   // A key is a handle on a widget's state from outside that widget. This one is
   // how the Add Task button reaches the Form below to ask it to validate.
@@ -80,6 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _taskController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -87,6 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showAddTaskDialog() {
     // Clear first, so whatever was typed last time is not still sitting there.
     _taskController.clear();
+    _descriptionController.clear();
 
     // showDialog puts a small screen on top of this one. The dark, tappable
     // background and the closing behaviour come for free.
@@ -101,25 +104,48 @@ class _HomeScreenState extends State<HomeScreen> {
           // it looks like overhead; with several, one validate() call does all.
           content: Form(
             key: _formKey,
-            // TextFormField is a TextField that knows how to validate itself.
-            child: TextFormField(
-              // Wiring the field to the controller is what lets the buttons
-              // below read what was typed.
-              controller: _taskController,
-              // hintText is the grey placeholder shown while the field is empty.
-              decoration: const InputDecoration(hintText: 'Enter task title'),
-              // Put the cursor in the field straight away, so the user can type
-              // without tapping first.
-              autofocus: true,
-              // A validator returns the message to show when input is bad, or
-              // null when it is fine. Returning null means "no complaint".
-              validator: (value) {
-                // trim() drops surrounding spaces, so "   " counts as empty.
-                if (value == null || value.trim().isEmpty) {
-                  return 'Task title is required';
-                }
-                return null;
-              },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  // A plain Key is a label a test can search for. With two
+                  // fields on screen, "find the text field" is now ambiguous.
+                  key: const Key('titleField'),
+                  // Wiring the field to the controller is what lets the buttons
+                  // below read what was typed.
+                  controller: _taskController,
+                  // hintText is the grey placeholder shown while the field is empty.
+                  decoration: const InputDecoration(
+                    hintText: 'Enter task title',
+                  ),
+                  // Put the cursor in the field straight away, so the user can type
+                  // without tapping first.
+                  autofocus: true,
+                  // A validator returns the message to show when input is bad, or
+                  // null when it is fine. Returning null means "no complaint".
+                  validator: (value) {
+                    // trim() drops surrounding spaces, so "   " counts as empty.
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Task title is required';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                TextFormField(
+                  key: const Key('descriptionField'),
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter description (optional)',
+                  ),
+                  // Grows to three lines before it starts scrolling.
+                  maxLines: 3,
+                  // No validator: the description is optional, so there is
+                  // nothing to complain about.
+                ),
+              ],
             ),
           ),
           // actions is the button row along the bottom.
@@ -148,10 +174,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 // Only the data change goes inside setState.
                 setState(() {
-                  tasks.add(Task(title: _taskController.text.trim()));
+                  tasks.add(
+                    Task(
+                      title: _taskController.text.trim(),
+                      description: _descriptionController.text.trim(),
+                    ),
+                  );
                 });
 
                 _taskController.clear();
+                _descriptionController.clear();
+
                 Navigator.pop(context);
               },
               child: const Text('Add Task'),

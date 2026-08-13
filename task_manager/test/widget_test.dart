@@ -22,6 +22,11 @@ const List<String> initialTitles = <String>[
   'Practice Dart',
 ];
 
+// The dialog has two text fields now, so "find the text field" is ambiguous.
+// Each one carries a Key in home_screen.dart, and these find them by it.
+final Finder titleField = find.byKey(const Key('titleField'));
+final Finder descriptionField = find.byKey(const Key('descriptionField'));
+
 void main() {
   group('TaskManagerApp', () {
     // testWidgets (not test) builds a real widget tree, headlessly.
@@ -120,7 +125,7 @@ void main() {
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'Tick me');
+      await tester.enterText(titleField, 'Tick me');
       await tester.tap(find.text('Add Task'));
       await tester.pumpAndSettle();
 
@@ -169,7 +174,7 @@ void main() {
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'Delete me');
+      await tester.enterText(titleField, 'Delete me');
       await tester.tap(find.text('Add Task'));
       await tester.pumpAndSettle();
       expect(find.text('Delete me'), findsOneWidget);
@@ -191,7 +196,7 @@ void main() {
       for (int i = 0; i < 2; i++) {
         await tester.tap(find.byType(FloatingActionButton));
         await tester.pumpAndSettle();
-        await tester.enterText(find.byType(TextField), 'Duplicate');
+        await tester.enterText(titleField, 'Duplicate');
         await tester.tap(find.text('Add Task'));
         await tester.pumpAndSettle();
       }
@@ -254,8 +259,13 @@ void main() {
 
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(find.text('Add New Task'), findsOneWidget);
-      expect(find.byType(TextFormField), findsOneWidget);
-      expect(find.text('Enter task title'), findsOneWidget); // the hint
+
+      // Two fields now: a required title and an optional description.
+      expect(find.byType(TextFormField), findsNWidgets(2));
+      expect(titleField, findsOneWidget);
+      expect(descriptionField, findsOneWidget);
+      expect(find.text('Enter task title'), findsOneWidget); // the hints
+      expect(find.text('Enter description (optional)'), findsOneWidget);
 
       // Nothing added yet — the list is untouched while the dialog is open.
       expect(find.byType(TaskTile), findsNWidgets(initialTitles.length));
@@ -270,13 +280,105 @@ void main() {
       await tester.pumpAndSettle();
 
       // enterText types into the field, as a user would.
-      await tester.enterText(find.byType(TextField), 'Write documentation');
+      await tester.enterText(titleField, 'Write documentation');
       await tester.tap(find.text('Add Task'));
       await tester.pumpAndSettle();
 
       expect(find.byType(AlertDialog), findsNothing); // dialog closed
       expect(find.byType(TaskTile), findsNWidgets(initialTitles.length + 1));
       expect(find.text('Write documentation'), findsOneWidget);
+    });
+
+    testWidgets('a description is shown under the title', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(titleField, 'Read the docs');
+      await tester.enterText(descriptionField, 'Start with widgets');
+      await tester.tap(find.text('Add Task'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Read the docs'), findsOneWidget);
+      expect(find.text('Start with widgets'), findsOneWidget);
+
+      // The subtitle really is the ListTile's, not a stray Text elsewhere.
+      expect(
+        find.descendant(
+          of: find.byType(TaskTile),
+          matching: find.text('Start with widgets'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the description is optional', (WidgetTester tester) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(titleField, 'No description');
+      // Description left untouched — the form must still accept it.
+      await tester.tap(find.text('Add Task'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('No description'), findsOneWidget);
+
+      // Row shows the title and nothing else — no blank second line.
+      final ListTile tile = tester.widget(
+        find
+            .descendant(
+              of: find.byType(TaskTile),
+              matching: find.byType(ListTile),
+            )
+            .last,
+      );
+      expect(tile.subtitle, isNull);
+    });
+
+    testWidgets('a whitespace-only description shows no subtitle', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(titleField, 'Spaces only');
+      await tester.enterText(descriptionField, '     ');
+      await tester.tap(find.text('Add Task'));
+      await tester.pumpAndSettle();
+
+      final ListTile tile = tester.widget(
+        find
+            .descendant(
+              of: find.byType(TaskTile),
+              matching: find.byType(ListTile),
+            )
+            .last,
+      );
+      expect(tile.subtitle, isNull);
+    });
+
+    testWidgets('the description is cleared on reopening', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(descriptionField, 'Left behind');
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      // Cancel only clears the title controller, but _showAddTaskDialog clears
+      // both before showing — which is what actually keeps this true.
+      expect(find.text('Left behind'), findsNothing);
     });
 
     testWidgets('the title is trimmed before it is used', (
@@ -286,7 +388,7 @@ void main() {
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), '   Buy milk   ');
+      await tester.enterText(titleField, '   Buy milk   ');
       await tester.tap(find.text('Add Task'));
       await tester.pumpAndSettle();
 
@@ -300,7 +402,7 @@ void main() {
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'Discard me');
+      await tester.enterText(titleField, 'Discard me');
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
@@ -318,7 +420,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Whitespace only, which counts as empty once trimmed.
-      await tester.enterText(find.byType(TextField), '    ');
+      await tester.enterText(titleField, '    ');
       await tester.tap(find.text('Add Task'));
       await tester.pumpAndSettle();
 
@@ -354,7 +456,7 @@ void main() {
       expect(find.text('Task title is required'), findsOneWidget);
 
       // Then get it right — the error must not block the retry.
-      await tester.enterText(find.byType(TextFormField), 'Second attempt');
+      await tester.enterText(titleField, 'Second attempt');
       await tester.tap(find.text('Add Task'));
       await tester.pumpAndSettle();
 
@@ -389,7 +491,7 @@ void main() {
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'Abandoned text');
+      await tester.enterText(titleField, 'Abandoned text');
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
@@ -425,6 +527,29 @@ void main() {
 
       expect(app.debugShowCheckedModeBanner, isFalse);
       expect(app.title, 'Task Manager');
+    });
+
+    testWidgets('adding a task with a description displays both', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const TaskManagerApp());
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      final fields = find.byType(TextFormField);
+
+      expect(fields, findsNWidgets(2));
+
+      await tester.enterText(fields.at(0), 'Learn Flutter');
+
+      await tester.enterText(fields.at(1), 'Understand widgets and state');
+
+      await tester.tap(find.text('Add Task'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Learn Flutter'), findsOneWidget);
+      expect(find.text('Understand widgets and state'), findsOneWidget);
     });
   });
 }

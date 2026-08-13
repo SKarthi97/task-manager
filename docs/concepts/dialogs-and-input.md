@@ -131,6 +131,93 @@ The `!` in `_formKey.currentState!` is Dart's "this is definitely not null". It 
 the form is on screen whenever the button can be pressed — but `!` is a promise *you* are making, and
 it crashes if you are wrong.
 
+## A second field, and why `Form` paid off
+
+The description field is where the `Form` stops looking like overhead. `AlertDialog.content` takes one
+widget, so the two fields go in a `Column`:
+
+```dart
+content: Form(
+  key: _formKey,
+  child: Column(
+    mainAxisSize: MainAxisSize.min,     // only as tall as its children
+    children: [
+      TextFormField(key: const Key('titleField'), validator: ...),
+      const SizedBox(height: 16),       // the gap between them
+      TextFormField(key: const Key('descriptionField'), maxLines: 3),
+    ],
+  ),
+),
+```
+
+Three small things doing real work:
+
+| | Why |
+| --- | --- |
+| `mainAxisSize: MainAxisSize.min` | a `Column` tries to fill all vertical space by default; inside a dialog that is wrong |
+| `SizedBox(height: 16)` | spacing in Flutter is a widget, not a margin property |
+| `maxLines: 3` | the field grows to three lines, then scrolls |
+
+The description has **no validator**, because it is optional — nothing to complain about. The single
+`validate()` call still covers both fields; it just finds nothing to say about the second one.
+
+## `Key` — a label a test can search for
+
+With two fields on screen, `find.byType(TextFormField)` matches both, and `enterText` fails with
+"found 2 widgets, expected 1". Ten tests broke on exactly that.
+
+The fix is a `Key` on each field:
+
+```dart
+TextFormField(key: const Key('titleField'), ...)
+```
+
+and finders in the test:
+
+```dart
+final Finder titleField = find.byKey(const Key('titleField'));
+final Finder descriptionField = find.byKey(const Key('descriptionField'));
+```
+
+The test now says *which* field it means, and stays correct if the fields are reordered — where
+`.first` and `.last` would silently start testing the wrong one.
+
+> **Two kinds of key, doing different jobs.** A plain `Key` is an identity label — for finding a
+> widget, and for keeping state with the right item when a list reorders. A `GlobalKey` additionally
+> gives access to a widget's *state*, which is why `_formKey` is one and these are not. Reach for a
+> plain `Key` unless you actually need to call into the state.
+
+## An empty box and a missing value are not the same thing
+
+`Task.description` is `String?`, so "no description" should be `null`. But the dialog stores this:
+
+```dart
+description: _descriptionController.text.trim()   // "" when the field is empty
+```
+
+An untouched field gives `""`, not `null` — so there are now two different ways to say "no
+description", and only the UI hides the difference:
+
+```dart
+subtitle: task.description == null || task.description!.isEmpty
+    ? null
+    : Text(task.description!),
+```
+
+That guard is why the screen looks right. It is worth knowing the values underneath are inconsistent,
+because the next thing that reads `description` may only check one of the two:
+
+```dart
+if (task.description != null) { ... }     // true for an empty string — probably not intended
+```
+
+Storing the absence properly removes the trap at the source:
+
+```dart
+final text = _descriptionController.text.trim();
+description: text.isEmpty ? null : text,
+```
+
 ### When the message appears, and when it goes
 
 Validation only runs when `validate()` is called, which is what makes the behaviour feel right:

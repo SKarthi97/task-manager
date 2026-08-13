@@ -38,6 +38,10 @@ Every term in one place, one plain sentence each. Follow a link for the longer e
 | `Form` | Groups fields so one `validate()` call checks them all. | [dialogs-and-input](dialogs-and-input.md) |
 | `validator` | Returns the error message, or `null` when input is fine. | [dialogs-and-input](dialogs-and-input.md) |
 | `GlobalKey` | A handle on another widget's state from outside it. | [dialogs-and-input](dialogs-and-input.md) |
+| `Key` | An identity label — used here so a test can find one field. | [dialogs-and-input](dialogs-and-input.md) |
+| `SizedBox` | A fixed-size gap. Spacing is a widget, not a property. | [dialogs-and-input](dialogs-and-input.md) |
+| `mainAxisSize.min` | "Only be as big as your children" — needed inside a dialog. | [dialogs-and-input](dialogs-and-input.md) |
+| `maxLines` | How tall a text field grows before it scrolls. | [dialogs-and-input](dialogs-and-input.md) |
 | `!` | "This is definitely not null" — a promise that crashes if wrong. | [dialogs-and-input](dialogs-and-input.md) |
 | Controller | Your handle on a text field — reads and clears what was typed. | [dialogs-and-input](dialogs-and-input.md) |
 | `dispose` | Cleanup that runs when a screen is removed for good. | [dialogs-and-input](dialogs-and-input.md) |
