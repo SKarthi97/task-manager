@@ -19,6 +19,7 @@ needed following up.
 | [concepts/state.md](concepts/state.md) | `StatefulWidget`, `setState`, and testing a tap |
 | [concepts/dialogs-and-input.md](concepts/dialogs-and-input.md) | Controllers, `dispose`, `showDialog`, validation, `Key`s for tests |
 | [concepts/callbacks.md](concepts/callbacks.md) | Data down / events up, `VoidCallback`, `? :`, mutable vs `copyWith` |
+| [concepts/persistence.md](concepts/persistence.md) | Saving to the device, `Future`/`async`, `initState`, `mounted` |
 | [concepts/testing.md](concepts/testing.md) | Unit vs widget tests, finders and matchers, tests as documentation |
 | [concepts/project-layout.md](concepts/project-layout.md) | Where files live, imports, stale branches, line endings |
 
@@ -41,6 +42,7 @@ Source files carry only brief comments and point at the file that explains them.
 
 ## Current state
 
+- On launch a spinner shows while the saved tasks load.
 - With no tasks, the screen shows an icon, *"No tasks yet"* and *"Add a task using the + button."*
 - Otherwise it shows a scrolling list of tasks. The "+" button opens a dialog asking
   for a title; typing one and pressing **Add Task** adds it, **Cancel** discards it, and an empty
@@ -48,13 +50,15 @@ Source files carry only brief comments and point at the file that explains them.
   description, which appears as a second line on the row.
 - Tapping a task's checkbox ticks it off and crosses out the title; tapping again undoes it.
 - Each row has a delete button that removes that task.
-- Still to do: tasks cannot be edited, deletion is instant with no undo, and nothing is saved —
-  closing the app resets the list.
+- Tasks are saved to the device on every change and reloaded on launch, so the list survives a
+  restart. Unreadable stored data falls back to the empty state rather than crashing.
+- Still to do: tasks cannot be edited, and deletion is instant with no undo.
 - An empty description is stored as `''` rather than `null`, so there are two ways to say "none" —
   see [an empty box and a missing value](concepts/dialogs-and-input.md#an-empty-box-and-a-missing-value-are-not-the-same-thing).
-- `flutter analyze` is clean and all 44 tests pass: 35 widget tests and 9 unit tests for `Task`.
-- `pubspec.yaml` carries the placeholder description `"A new Flutter project."` and no
-  dependencies beyond `cupertino_icons` and `flutter_lints`.
+- `flutter analyze` is clean and all 64 tests pass: 41 widget tests, and 23 unit tests covering
+  `Task` and `TaskStorage`.
+- `pubspec.yaml` still carries the placeholder description `"A new Flutter project."`; its only
+  runtime dependencies are `cupertino_icons` and `shared_preferences`.
 - The Android application ID is still the placeholder `com.example.task_manager`.
 
 ## Next steps
@@ -65,11 +69,13 @@ Source files carry only brief comments and point at the file that explains them.
    and permanent.
 2. Store an empty description as `null` rather than `''`, so "no description" has one meaning.
 3. Let a task be edited — the add dialog is most of an edit dialog already, given both fields exist.
-4. Save the list so it survives a restart. At that point tasks need an `id` — see
-   [remove() matches by equality](concepts/callbacks.md#remove-matches-by-equality-not-position).
+4. Give each task an `id`. Saving and reloading makes a new object every time, so identity-based
+   comparison stops being meaningful — see
+   [identity does not survive a round trip](concepts/persistence.md#identity-does-not-survive-a-round-trip).
+5. Save only what changed rather than rewriting the whole list, once the list is long enough to care.
 
 **Housekeeping, still outstanding from setup**
 
-5. Install the Android SDK and register it with `flutter config --android-sdk <path>`.
-6. Update `pubspec.yaml` (description, and dependencies for state management + saving).
-7. Replace the Android placeholder application ID `com.example.task_manager`.
+6. Install the Android SDK and register it with `flutter config --android-sdk <path>`.
+7. Update the `pubspec.yaml` description, which is still `"A new Flutter project."`.
+8. Replace the Android placeholder application ID `com.example.task_manager`.

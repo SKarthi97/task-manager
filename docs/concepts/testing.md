@@ -35,11 +35,25 @@ be tested this way.
 | Speed | instant | milliseconds |
 | Tests | logic and data | what appears on screen |
 
+An `async` unit test is still a unit test. `TaskStorage` returns `Future`s, so its tests `await` — but
+there is no screen, so no `testWidgets` and no pumping:
+
+```dart
+test('saves and loads a task', () async {
+  await storage.saveTasks([Task(title: 'Learn persistence')]);
+
+  expect((await storage.loadTasks()).first.title, 'Learn persistence');
+});
+```
+
+See [testing the service on its own](persistence.md#testing-the-service-on-its-own).
+
 ### The test folder mirrors `lib`
 
 ```text
-lib/models/task.dart   →   test/models/task_test.dart
-lib/widgets/...        →   test/widgets/..._test.dart
+lib/models/task.dart      →   test/models/task_test.dart
+lib/services/...          →   test/services/..._test.dart
+lib/widgets/...           →   test/widgets/..._test.dart
 ```
 
 The `_test.dart` suffix is not decoration: `flutter test` finds files by that name. A file called

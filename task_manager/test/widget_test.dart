@@ -3,8 +3,11 @@
 //
 // Run with:  flutter test
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // The app is imported as a package, using the `name:` from pubspec.yaml.
 // HomeScreen needs its own import: main.dart imports it rather than declaring
@@ -13,9 +16,9 @@ import 'package:task_manager/main.dart';
 import 'package:task_manager/screens/home_screen.dart';
 import 'package:task_manager/widgets/task_tile.dart';
 
-// The starting tasks are private to _HomeScreenState now, so the tests cannot
-// read them. They are listed here instead — if the sample data changes, this
-// list changes with it.
+// The screen no longer holds sample tasks — it loads whatever was saved. So the
+// tests put these three in storage before the app starts, and they arrive the
+// same way a real user's tasks would.
 const List<String> initialTitles = <String>[
   'Learn Flutter widgets',
   'Build Task Manager app',
@@ -27,19 +30,49 @@ const List<String> initialTitles = <String>[
 final Finder titleField = find.byKey(const Key('titleField'));
 final Finder descriptionField = find.byKey(const Key('descriptionField'));
 
+// Puts tasks into storage before the app reads it. setMockInitialValues stands
+// in for the real device store, so no plugin and no disk are involved.
+void seedStorage(List<String> titles) {
+  SharedPreferences.setMockInitialValues(<String, Object>{
+    'tasks': jsonEncode(
+      titles
+          .map(
+            (String title) => <String, Object?>{
+              'title': title,
+              'description': null,
+              'isCompleted': false,
+            },
+          )
+          .toList(),
+    ),
+  });
+}
+
+// Starting the app is now two steps: mount it, then let the load finish.
+// pumpWidget alone would leave the test looking at the loading spinner.
+Future<void> pumpApp(WidgetTester tester) async {
+  await tester.pumpWidget(const TaskManagerApp());
+  await tester.pumpAndSettle();
+}
+
 void main() {
   group('TaskManagerApp', () {
+    // setUp runs before every test, so each one starts from the same store and
+    // cannot be affected by what another test saved.
+    setUp(() {
+      seedStorage(initialTitles);
+    });
     // testWidgets (not test) builds a real widget tree, headlessly.
     testWidgets('renders the app bar title', (WidgetTester tester) async {
-      // pumpWidget mounts the tree and renders one frame.
-      await tester.pumpWidget(const TaskManagerApp());
+      // pumpApp mounts the tree and waits for the saved tasks to load.
+      await pumpApp(tester);
 
       // MaterialApp's title is OS metadata, so only the AppBar's Text matches.
       expect(find.text('Task Manager'), findsOneWidget);
     });
 
     testWidgets('renders one row per task', (WidgetTester tester) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       // findsNWidgets checks an exact count — one tile for each sample task.
       expect(find.byType(TaskTile), findsNWidgets(initialTitles.length));
@@ -47,7 +80,7 @@ void main() {
     });
 
     testWidgets('shows each task title', (WidgetTester tester) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       for (final String title in initialTitles) {
         expect(find.text(title), findsOneWidget);
@@ -57,7 +90,7 @@ void main() {
     testWidgets('every task starts unchecked and tappable', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       final Iterable<Checkbox> boxes = tester.widgetList<Checkbox>(
         find.byType(Checkbox),
@@ -73,7 +106,7 @@ void main() {
     testWidgets('tapping a checkbox marks that task complete', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(Checkbox).first);
       await tester.pump();
@@ -90,7 +123,7 @@ void main() {
     testWidgets('tapping a checked box unchecks it again', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(Checkbox).first);
       await tester.pump();
@@ -104,7 +137,7 @@ void main() {
     testWidgets('a completed task title is struck through', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       // Before: no strikethrough.
       Text title = tester.widget(find.text(initialTitles.first));
@@ -121,7 +154,7 @@ void main() {
     testWidgets('a newly added task can be completed too', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
@@ -137,7 +170,7 @@ void main() {
     });
 
     testWidgets('every row has a delete button', (WidgetTester tester) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       expect(find.byIcon(Icons.delete), findsNWidgets(initialTitles.length));
     });
@@ -145,7 +178,7 @@ void main() {
     testWidgets('tapping delete removes that task', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byIcon(Icons.delete).first);
       await tester.pump();
@@ -157,7 +190,7 @@ void main() {
     testWidgets('deleting the middle task leaves the others in order', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byIcon(Icons.delete).at(1));
       await tester.pump();
@@ -170,7 +203,7 @@ void main() {
     testWidgets('a newly added task can be deleted again', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
@@ -189,7 +222,7 @@ void main() {
     testWidgets('two tasks with the same title delete one at a time', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       // Add the same title twice. They are separate objects, so removing one
       // must leave the other — this is what identity-based remove() guarantees.
@@ -211,7 +244,7 @@ void main() {
     testWidgets('deleting every task leaves an empty list', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       for (int i = 0; i < initialTitles.length; i++) {
         await tester.tap(find.byIcon(Icons.delete).first);
@@ -230,7 +263,7 @@ void main() {
     testWidgets('the empty state is hidden while tasks exist', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       expect(find.text('No tasks yet'), findsNothing);
       expect(find.byIcon(Icons.task_alt), findsNothing);
@@ -240,7 +273,7 @@ void main() {
     testWidgets('adding a task replaces the empty state with the list', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       // Empty the list first.
       for (int i = 0; i < initialTitles.length; i++) {
@@ -264,7 +297,7 @@ void main() {
     testWidgets('the add button stays available on the empty state', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       for (int i = 0; i < initialTitles.length; i++) {
         await tester.tap(find.byIcon(Icons.delete).first);
@@ -282,7 +315,7 @@ void main() {
     testWidgets('builds the expected Material scaffolding', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       expect(find.byType(MaterialApp), findsOneWidget);
       expect(find.byType(HomeScreen), findsOneWidget);
@@ -295,7 +328,7 @@ void main() {
     });
 
     testWidgets('the add button is enabled', (WidgetTester tester) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       final FloatingActionButton fab = tester.widget(
         find.byType(FloatingActionButton),
@@ -306,7 +339,7 @@ void main() {
     });
 
     testWidgets('tapping add opens the dialog', (WidgetTester tester) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       // tap sends the press; pumpAndSettle then keeps drawing frames until the
       // dialog has finished animating open. A single pump would catch it midway.
@@ -330,7 +363,7 @@ void main() {
     testWidgets('typing a title and confirming adds the task', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
@@ -348,7 +381,7 @@ void main() {
     testWidgets('a description is shown under the title', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
@@ -371,7 +404,7 @@ void main() {
     });
 
     testWidgets('the description is optional', (WidgetTester tester) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
@@ -398,7 +431,7 @@ void main() {
     testWidgets('a whitespace-only description shows no subtitle', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
@@ -421,7 +454,7 @@ void main() {
     testWidgets('the description is cleared on reopening', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
@@ -440,7 +473,7 @@ void main() {
     testWidgets('the title is trimmed before it is used', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
@@ -454,7 +487,7 @@ void main() {
     testWidgets('cancel closes the dialog without adding', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
@@ -470,7 +503,7 @@ void main() {
     testWidgets('an empty title is refused and the dialog stays open', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
@@ -488,7 +521,7 @@ void main() {
     testWidgets('no error is shown before the first attempt', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
@@ -501,7 +534,7 @@ void main() {
     testWidgets('typing a valid title after an error clears it and adds', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
@@ -524,7 +557,7 @@ void main() {
     testWidgets('the error does not survive reopening the dialog', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
@@ -543,7 +576,7 @@ void main() {
     testWidgets('the field is empty again on reopening', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
@@ -561,7 +594,7 @@ void main() {
     testWidgets('applies the orange seed colour scheme', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       // tester.element gives a BuildContext, which Theme.of needs.
       final ThemeData theme = Theme.of(tester.element(find.byType(Scaffold)));
@@ -576,7 +609,7 @@ void main() {
     });
 
     testWidgets('hides the debug banner', (WidgetTester tester) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       // tester.widget returns the actual instance, so properties can be read.
       final MaterialApp app = tester.widget(find.byType(MaterialApp));
@@ -588,7 +621,7 @@ void main() {
     testWidgets('adding a task with a description displays both', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const TaskManagerApp());
+      await pumpApp(tester);
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
@@ -606,6 +639,116 @@ void main() {
 
       expect(find.text('Learn Flutter'), findsOneWidget);
       expect(find.text('Understand widgets and state'), findsOneWidget);
+    });
+  });
+
+  // Saving and loading. Pumping the app a second time in the same test is a
+  // relaunch: a brand-new widget tree reading the same stored data.
+  group('persistence', () {
+    testWidgets('shows a spinner until the saved tasks arrive', (
+      WidgetTester tester,
+    ) async {
+      seedStorage(initialTitles);
+
+      // pumpWidget draws exactly one frame and stops. That first frame happens
+      // before the load finishes, which is the only moment the spinner exists —
+      // one extra pump() is enough to miss it.
+      await tester.pumpWidget(const TaskManagerApp());
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(TaskTile), findsNothing);
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(TaskTile), findsNWidgets(initialTitles.length));
+    });
+
+    testWidgets('shows the empty state when nothing has been saved', (
+      WidgetTester tester,
+    ) async {
+      // A first run: the key has never been written.
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      await pumpApp(tester);
+
+      expect(find.text('No tasks yet'), findsOneWidget);
+      expect(find.byType(TaskTile), findsNothing);
+    });
+
+    testWidgets('an added task is still there after a restart', (
+      WidgetTester tester,
+    ) async {
+      seedStorage(const <String>[]);
+      await pumpApp(tester);
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(titleField, 'Survive the restart');
+      await tester.enterText(descriptionField, 'With a description');
+      await tester.tap(find.text('Add Task'));
+      await tester.pumpAndSettle();
+
+      // Relaunch.
+      await pumpApp(tester);
+
+      expect(find.text('Survive the restart'), findsOneWidget);
+      expect(find.text('With a description'), findsOneWidget);
+      expect(find.byType(TaskTile), findsOneWidget);
+    });
+
+    testWidgets('a completed task is still completed after a restart', (
+      WidgetTester tester,
+    ) async {
+      seedStorage(initialTitles);
+      await pumpApp(tester);
+
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pumpAndSettle();
+
+      await pumpApp(tester);
+
+      final Checkbox box = tester.widget(find.byType(Checkbox).first);
+      expect(box.value, isTrue);
+    });
+
+    testWidgets('a deleted task stays deleted after a restart', (
+      WidgetTester tester,
+    ) async {
+      seedStorage(initialTitles);
+      await pumpApp(tester);
+
+      await tester.tap(find.byIcon(Icons.delete).first);
+      await tester.pumpAndSettle();
+
+      await pumpApp(tester);
+
+      expect(find.text(initialTitles.first), findsNothing);
+      expect(find.byType(TaskTile), findsNWidgets(initialTitles.length - 1));
+    });
+
+    testWidgets('unreadable stored data leaves the app usable', (
+      WidgetTester tester,
+    ) async {
+      // Not JSON at all. jsonDecode throws, the catch in _loadTasks handles it,
+      // and the app opens on the empty state instead of crashing on launch.
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'tasks': 'this is not json',
+      });
+
+      await pumpApp(tester);
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('No tasks yet'), findsOneWidget);
+
+      // And it still works: a new task can be added over the top.
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(titleField, 'Starting over');
+      await tester.tap(find.text('Add Task'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Starting over'), findsOneWidget);
     });
   });
 }

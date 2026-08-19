@@ -50,6 +50,19 @@ Every term in one place, one plain sentence each. Follow a link for the longer e
 | `showDialog` | Puts a small screen on top of the current one. | [dialogs-and-input](dialogs-and-input.md) |
 | `Navigator.pop` | Closes a dialog, or goes back a screen — the same thing. | [dialogs-and-input](dialogs-and-input.md) |
 | `pumpAndSettle` | In a test, keep drawing until animations stop. | [dialogs-and-input](dialogs-and-input.md) |
+| `Future` | A value that arrives later. | [persistence](persistence.md) |
+| `async` / `await` | Mark a function that waits; wait for a `Future`. | [persistence](persistence.md) |
+| `initState` | Runs once before the first build — where loading starts. | [persistence](persistence.md) |
+| `mounted` | False if the screen is gone. Check it after every `await`. | [persistence](persistence.md) |
+| `factory` | A constructor that works out what to build. | [persistence](persistence.md) |
+| `as` | Asserts a value's type, needed for decoded JSON. | [persistence](persistence.md) |
+| `??` | Use this fallback if the value is null. | [persistence](persistence.md) |
+| `jsonEncode` / `jsonDecode` | Object to text, and text back to object. | [persistence](persistence.md) |
+| `setMockInitialValues` | Fake device storage, for tests. | [persistence](persistence.md) |
+| `setUp` | Runs before every test, so tests cannot affect each other. | [persistence](persistence.md) |
+| `late` | "This gets a value before anything reads it." | [persistence](persistence.md) |
+| `throwsA` | Matcher for "this should throw". | [persistence](persistence.md) |
+| Service | A class that talks to the outside world, holding no widgets. | [persistence](persistence.md) |
 | Unit test | A test of plain Dart — no widgets, no pumping. | [testing](testing.md) |
 | `test` vs `testWidgets` | `test` for logic; `testWidgets` when there is a screen. | [testing](testing.md) |
 | `_test.dart` | The suffix `flutter test` looks for. Miss it and the file never runs. | [testing](testing.md) |
