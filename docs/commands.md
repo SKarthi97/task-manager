@@ -628,3 +628,76 @@ flutter test            # 44 tests passed (35 widget + 9 unit)
 
 New concepts are in
 [unit tests: test, not testWidgets](concepts/testing.md#unit-tests-test-not-testwidgets).
+
+## 23 — Save the tasks to the device
+
+The first package dependency, and the first code that outlives the app running:
+
+```bash
+flutter pub add shared_preferences      # or add the line and run flutter pub get
+```
+
+| File | Change |
+| --- | --- |
+| [`pubspec.yaml`](../task_manager/pubspec.yaml) | `shared_preferences: ^2.5.3` |
+| [`models/task.dart`](../task_manager/lib/models/task.dart) | `toMap()` and a `Task.fromMap()` factory |
+| [`services/task_storage.dart`](../task_manager/lib/services/task_storage.dart) | **new** — `saveTasks` / `loadTasks`, JSON in one key |
+| [`screens/home_screen.dart`](../task_manager/lib/screens/home_screen.dart) | loads in `initState`, saves after every change, shows a spinner while loading |
+
+**Another stale-branch near-miss, worse than last time.** Local `feature/project-setup` was **six**
+commits behind, so the working copies of `home_screen.dart`, `task_tile.dart` and `widget_test.dart`
+predated the description field, the empty state and the unit tests. Committing them would have
+reverted three merged pull requests:
+
+```bash
+git diff --stat origin/feature/project-setup
+#  task_manager/lib/widgets/task_tile.dart   |   3 -      ← the subtitle
+#  task_manager/test/widget_test.dart        | 205 +----   ← 205 lines of tests
+```
+
+The persistence work was re-applied onto files taken from `origin/feature/project-setup` instead. See
+[check the branch is current before editing](concepts/project-layout.md#check-the-branch-is-current-before-editing).
+
+`flutter analyze` was clean, but **the widget tests failed in bulk** — they expected three sample
+tasks, and the screen now starts empty and loads from storage:
+
+```text
+Expected: exactly 3 matching candidates
+  Actual: _TypeWidgetFinder:<Found 0 widgets with type "TaskTile": []>
+```
+
+The fix was to give the tests a store to read:
+
+```dart
+setUp(() => seedStorage(initialTitles));       // SharedPreferences.setMockInitialValues
+
+Future<void> pumpApp(WidgetTester tester) async {
+  await tester.pumpWidget(const TaskManagerApp());
+  await tester.pumpAndSettle();                // let the load finish
+}
+```
+
+Every test then starts the app the same way a user would, load included. Six persistence tests were
+added on top, taking the suite to 56:
+
+| Test | Asserts |
+| --- | --- |
+| shows a spinner until the saved tasks arrive | `CircularProgressIndicator` on the first frame, gone after |
+| shows the empty state when nothing has been saved | a first run is not an error |
+| an added task is still there after a restart | title **and** description survive |
+| a completed task is still completed after a restart | the tick is saved, not just drawn |
+| a deleted task stays deleted after a restart | the removal is saved |
+| unreadable stored data leaves the app usable | garbage in the key → empty state, and adding still works |
+
+Plus six more unit tests for `toMap`/`fromMap`, including a missing `isCompleted` falling back to
+`false`, and a round trip producing a *different object* with equal values.
+
+```bash
+dart format lib test
+flutter analyze         # No issues found!
+flutter test            # 56 tests passed (41 widget + 15 unit)
+```
+
+One test needed a second attempt: with mock storage the load finishes almost instantly, so an extra
+`pump()` after `pumpWidget` missed the spinner completely. New concepts are in
+[concepts/persistence.md](concepts/persistence.md).

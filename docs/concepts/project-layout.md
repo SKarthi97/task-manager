@@ -14,9 +14,14 @@ lib/
 │   └── task.dart          what a task is
 ├── screens/
 │   └── home_screen.dart   one screen per file
+├── services/
+│   └── task_storage.dart  talking to the outside world
 └── widgets/
     └── task_tile.dart     one reusable piece of UI
 ```
+
+`services/` is where code that deals with something external lives — storage here, an API later. Like
+`models/`, it holds no widgets, which is what keeps it testable on its own.
 
 The `screens/`, `widgets/`, `models/` split is a convention people follow, not a rule the tools
 enforce — but following it means anyone can guess where a file lives.

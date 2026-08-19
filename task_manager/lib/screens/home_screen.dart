@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import '../models/task.dart';
+import '../services/task_storage.dart';
 import '../widgets/task_tile.dart';
 
 // StatefulWidget, because the list of tasks can now change while the app runs.
@@ -20,11 +21,15 @@ class _HomeScreenState extends State<HomeScreen> {
   // Lives in State, not in the widget, so it survives every rebuild.
   // final means the list itself is never swapped for a different list —
   // its contents can still change with add() and remove().
-  final List<Task> tasks = [
-    Task(title: "Learn Flutter widgets"),
-    Task(title: "Build Task Manager app"),
-    Task(title: "Practice Dart"),
-  ];
+  // Starts empty now: the real tasks are read from the device in initState, so
+  // hard-coded samples would either be overwritten or appear alongside them.
+  final List<Task> tasks = [];
+
+  final TaskStorage _taskStorage = TaskStorage();
+
+  // True until the first load finishes. Without it the empty state would flash
+  // up for a moment on every launch, before the saved tasks arrive.
+  bool _isLoading = true;
 
   // A controller is the handle on a text field: it holds what has been typed,
   // and lets this code read or clear it.
@@ -35,13 +40,27 @@ class _HomeScreenState extends State<HomeScreen> {
   // how the Add Task button reaches the Form below to ask it to validate.
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
+  // initState runs once, before the first build. It is where loading starts —
+  // build must stay fast and side-effect free, so it cannot go there.
+  @override
+  void initState() {
+    super.initState();
+
+    // Not awaited: initState cannot be async. The load finishes later and calls
+    // setState when it does.
+    _loadTasks();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Task Manager")),
-      // An empty list and a full one are different screens, so the body picks
-      // between them. Deleting the last task swaps one for the other.
-      body: tasks.isEmpty
+      // Three states now, not two: loading, empty, and a list.
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          // An empty list and a full one are different screens, so the body
+          // picks between them. Deleting the last task swaps one for the other.
+          : tasks.isEmpty
           ? const Center(
               child: Column(
                 // Only as tall as its children, so the group stays centred.
@@ -68,18 +87,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   task: task,
                   // The tile reports the tap; this screen decides what it means.
                   // The data lives here, so the change has to happen here too.
-                  onToggle: () {
+                  //
+                  // Redraw first, then save: setState is instant, saving is not,
+                  // and the user should not wait on the disk to see a tick.
+                  onToggle: () async {
                     setState(() {
                       task.isCompleted = !task.isCompleted;
                     });
+
+                    await _saveTasks();
                   },
-                  onDelete: () {
+                  onDelete: () async {
                     setState(() {
                       // remove() matches by ==, which Task does not define, so
                       // it falls back to identity — it removes this exact
                       // object, even if another task has the same title.
                       tasks.remove(task);
                     });
+
+                    await _saveTasks();
                   },
                 );
               },
@@ -179,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 // validate() runs every validator in the Form and shows their
                 // messages. It returns false if any of them complained, and
                 // returning early then leaves the dialog open with the error on
@@ -205,6 +231,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 _descriptionController.clear();
 
                 Navigator.pop(context);
+
+                await _saveTasks();
               },
               child: const Text('Add Task'),
             ),
@@ -212,5 +240,44 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+  }
+
+  // Reads whatever was saved and puts it on screen. Runs once, from initState.
+  Future<void> _loadTasks() async {
+    // try/catch because storage can fail — a corrupted or half-written file
+    // would otherwise crash the app on launch, which is the worst moment.
+    try {
+      final savedTasks = await _taskStorage.loadTasks();
+
+      // mounted is false if the screen was closed while this was loading.
+      // Calling setState then throws, so every await in a State needs this
+      // check before touching state.
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        tasks.addAll(savedTasks);
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      // Failing to load is not failing to run: stop the spinner and show the
+      // empty state, so the app is still usable.
+      setState(() {
+        _isLoading = false;
+      });
+
+      debugPrint('Failed to load tasks: $error');
+    }
+  }
+
+  // Writes the whole list every time. Fine for a short list; a real app with
+  // thousands of rows would save just what changed.
+  Future<void> _saveTasks() async {
+    await _taskStorage.saveTasks(tasks);
   }
 }
