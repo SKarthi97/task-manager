@@ -55,6 +55,16 @@ Future<void> pumpApp(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+// Deleting takes two taps now: the bin, then Delete in the confirmation dialog.
+// Tests that are about something else say so in one line by using this, rather
+// than repeating the two-step dance and obscuring what they are checking.
+Future<void> deleteTask(WidgetTester tester, Finder deleteButton) async {
+  await tester.tap(deleteButton);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Delete'));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   group('TaskManagerApp', () {
     // setUp runs before every test, so each one starts from the same store and
@@ -175,13 +185,12 @@ void main() {
       expect(find.byIcon(Icons.delete), findsNWidgets(initialTitles.length));
     });
 
-    testWidgets('tapping delete removes that task', (
+    testWidgets('a confirmed deletion removes that row', (
       WidgetTester tester,
     ) async {
       await pumpApp(tester);
 
-      await tester.tap(find.byIcon(Icons.delete).first);
-      await tester.pump();
+      await deleteTask(tester, find.byIcon(Icons.delete).first);
 
       expect(find.byType(TaskTile), findsNWidgets(initialTitles.length - 1));
       expect(find.text(initialTitles.first), findsNothing);
@@ -192,12 +201,101 @@ void main() {
     ) async {
       await pumpApp(tester);
 
-      await tester.tap(find.byIcon(Icons.delete).at(1));
-      await tester.pump();
+      await deleteTask(tester, find.byIcon(Icons.delete).at(1));
 
       expect(find.text(initialTitles[1]), findsNothing); // the one tapped
       expect(find.text(initialTitles[0]), findsOneWidget); // untouched
       expect(find.text(initialTitles[2]), findsOneWidget); // untouched
+    });
+
+    testWidgets('deleting a task requires confirmation', (
+      WidgetTester tester,
+    ) async {
+      await pumpApp(tester);
+
+      expect(find.text(initialTitles.first), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.delete).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Delete Task?'), findsOneWidget);
+
+      expect(
+        find.text('Are you sure you want to delete "${initialTitles.first}"?'),
+        findsOneWidget,
+      );
+
+      // The task must still exist because confirmation has not happened.
+      expect(find.text(initialTitles.first), findsOneWidget);
+    });
+
+    testWidgets('cancelling deletion keeps the task', (
+      WidgetTester tester,
+    ) async {
+      await pumpApp(tester);
+
+      final title = initialTitles.first;
+
+      await tester.tap(find.byIcon(Icons.delete).first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(title), findsOneWidget);
+    });
+
+    testWidgets('confirming deletion removes the task', (
+      WidgetTester tester,
+    ) async {
+      await pumpApp(tester);
+
+      final title = initialTitles.first;
+
+      await tester.tap(find.byIcon(Icons.delete).first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(title), findsNothing);
+    });
+
+    testWidgets('dismissing the dialog without choosing keeps the task', (
+      WidgetTester tester,
+    ) async {
+      await pumpApp(tester);
+
+      await tester.tap(find.byIcon(Icons.delete).first);
+      await tester.pumpAndSettle();
+
+      // Tapping the dimmed background closes the dialog without pressing either
+      // button, so showDialog returns null rather than true or false. The check
+      // is `shouldDelete != true` for exactly this case — `== false` would miss
+      // it and delete the task.
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text(initialTitles.first), findsOneWidget);
+    });
+
+    testWidgets('a cancelled deletion is not saved either', (
+      WidgetTester tester,
+    ) async {
+      await pumpApp(tester);
+
+      await tester.tap(find.byIcon(Icons.delete).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      // Still on screen is not the same as still stored — a bug that saved on
+      // cancel would only show up after a restart.
+      await pumpApp(tester);
+
+      expect(find.text(initialTitles.first), findsOneWidget);
+      expect(find.byType(TaskTile), findsNWidgets(initialTitles.length));
     });
 
     testWidgets('a newly added task can be deleted again', (
@@ -212,8 +310,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Delete me'), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.delete).last);
-      await tester.pump();
+      await deleteTask(tester, find.byIcon(Icons.delete).last);
 
       expect(find.text('Delete me'), findsNothing);
       expect(find.byType(TaskTile), findsNWidgets(initialTitles.length));
@@ -235,8 +332,7 @@ void main() {
       }
       expect(find.text('Duplicate'), findsNWidgets(2));
 
-      await tester.tap(find.byIcon(Icons.delete).last);
-      await tester.pump();
+      await deleteTask(tester, find.byIcon(Icons.delete).last);
 
       expect(find.text('Duplicate'), findsOneWidget);
     });
@@ -247,8 +343,7 @@ void main() {
       await pumpApp(tester);
 
       for (int i = 0; i < initialTitles.length; i++) {
-        await tester.tap(find.byIcon(Icons.delete).first);
-        await tester.pump();
+        await deleteTask(tester, find.byIcon(Icons.delete).first);
       }
 
       expect(find.byType(TaskTile), findsNothing);
@@ -277,8 +372,7 @@ void main() {
 
       // Empty the list first.
       for (int i = 0; i < initialTitles.length; i++) {
-        await tester.tap(find.byIcon(Icons.delete).first);
-        await tester.pump();
+        await deleteTask(tester, find.byIcon(Icons.delete).first);
       }
       expect(find.text('No tasks yet'), findsOneWidget);
 
@@ -300,8 +394,7 @@ void main() {
       await pumpApp(tester);
 
       for (int i = 0; i < initialTitles.length; i++) {
-        await tester.tap(find.byIcon(Icons.delete).first);
-        await tester.pump();
+        await deleteTask(tester, find.byIcon(Icons.delete).first);
       }
 
       // The empty state tells the user to press "+", so it had better be there.
@@ -718,8 +811,7 @@ void main() {
       seedStorage(initialTitles);
       await pumpApp(tester);
 
-      await tester.tap(find.byIcon(Icons.delete).first);
-      await tester.pumpAndSettle();
+      await deleteTask(tester, find.byIcon(Icons.delete).first);
 
       await pumpApp(tester);
 

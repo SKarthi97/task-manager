@@ -732,3 +732,46 @@ flutter test            # 64 tests passed (41 widget + 23 unit)
 
 New concepts are in
 [testing the service on its own](concepts/persistence.md#testing-the-service-on-its-own).
+
+## 25 — Ask before deleting
+
+Deleting was instant and permanent. Now it asks:
+
+| File | Change |
+| --- | --- |
+| [`screens/home_screen.dart`](../task_manager/lib/screens/home_screen.dart) | `onDelete` calls a new `_confirmDeleteTask`, which awaits `showDialog<bool>` and only removes on a clear yes |
+
+`flutter analyze` was clean, but **ten tests failed**, from two different causes:
+
+```text
+Expected: exactly 2 matching candidates
+  Actual: _TypeWidgetFinder:<Found 3 widgets with type "TaskTile">   ← nothing was deleted
+
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "Learn Flutter widgets">   ← still loading
+```
+
+1. **Seven existing tests** deleted a task and expected it gone. Deleting now needs a second tap, so
+   a `deleteTask` helper does both and they stay about their own subject.
+2. **The three new confirmation tests** called `tester.pumpWidget` directly instead of the `pumpApp`
+   helper, so they looked at the screen while the saved tasks were still loading — nothing was on it
+   yet. This is the same trap as the spinner test in step 23, from the other direction.
+
+Two tests were added for paths that are easy to assume work, taking the suite to 69:
+
+| Test | Asserts |
+| --- | --- |
+| dismissing the dialog without choosing keeps the task | tapping the dimmed background returns `null`, and `!= true` handles it |
+| a cancelled deletion is not saved either | cancel, then relaunch — still on screen *and* still stored |
+
+`tapping delete removes that task` was renamed to `a confirmed deletion removes that row`, since
+tapping delete no longer removes anything on its own.
+
+```bash
+dart format lib test
+flutter analyze         # No issues found!
+flutter test            # 69 tests passed (46 widget + 23 unit)
+```
+
+New concepts are in
+[a dialog that answers a question](concepts/dialogs-and-input.md#a-dialog-that-answers-a-question).

@@ -75,6 +75,89 @@ Navigator.pop(context);
 The same call that goes back a screen also closes a dialog — because in Flutter a dialog *is* just
 another route stacked on top. One idea, not two.
 
+## A dialog that answers a question
+
+`pop` takes a second argument, and `showDialog` hands it back. That turns a dialog from something that
+merely closes into something that *replies*:
+
+```dart
+final shouldDelete = await showDialog<bool>(
+  context: context,
+  builder: (dialogContext) => AlertDialog(
+    title: const Text('Delete Task?'),
+    content: Text('Are you sure you want to delete "${task.title}"?'),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(dialogContext, false),   // ← the answer
+        child: const Text('Cancel'),
+      ),
+      ElevatedButton(
+        onPressed: () => Navigator.pop(dialogContext, true),    // ← the answer
+        child: const Text('Delete'),
+      ),
+    ],
+  ),
+);
+```
+
+The `<bool>` says what kind of answer to expect. `await` waits for the user, so the code after it reads
+in the order it happens: ask, wait, then act.
+
+Two habits in that snippet:
+
+- **Name the dialog's context something else.** `dialogContext` makes it obvious which route is being
+  popped — the dialog's own, not the screen underneath.
+- **Name the thing in the question.** "Are you sure?" does not say what is about to be lost;
+  *Delete "Practice Dart"?* does.
+
+### There are three answers, not two
+
+```dart
+if (shouldDelete != true) {
+  return;
+}
+```
+
+`showDialog<bool>` returns `bool?` — and the third possibility is the one that bites:
+
+| The user | Returns |
+| --- | --- |
+| pressed Delete | `true` |
+| pressed Cancel | `false` |
+| tapped outside, or pressed back | **`null`** |
+
+Writing `if (shouldDelete == false) return;` looks equivalent and is not: dismissing the dialog gives
+`null`, that check would fall through, and the task would be deleted by tapping *next to* the dialog.
+`!= true` means "anything short of a clear yes does nothing", which is the right default for something
+destructive.
+
+### Confirmation changes every test that deletes
+
+Deleting is two taps now, so every test that deleted something as a *setup step* broke. Rather than
+repeating the dance, one helper says it in a line:
+
+```dart
+Future<void> deleteTask(WidgetTester tester, Finder deleteButton) async {
+  await tester.tap(deleteButton);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Delete'));
+  await tester.pumpAndSettle();
+}
+```
+
+Tests about deletion still spell out the steps — that is what they are checking. Tests that merely
+need a task gone use the helper and stay about their own subject.
+
+The dismissal path is worth its own test, because it is the one a reader would assume works:
+
+```dart
+await tester.tapAt(const Offset(10, 10));   // tap the dimmed background
+await tester.pumpAndSettle();
+
+expect(find.byType(AlertDialog), findsNothing);
+expect(find.text(initialTitles.first), findsOneWidget);   // still there
+```
+
 ## Validation: telling the user what is wrong
 
 The first version refused empty titles by doing nothing:

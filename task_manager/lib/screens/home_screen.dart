@@ -97,15 +97,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     await _saveTasks();
                   },
-                  onDelete: () async {
-                    setState(() {
-                      // remove() matches by ==, which Task does not define, so
-                      // it falls back to identity — it removes this exact
-                      // object, even if another task has the same title.
-                      tasks.remove(task);
-                    });
-
-                    await _saveTasks();
+                  onDelete: () {
+                    _confirmDeleteTask(task);
                   },
                 );
               },
@@ -279,5 +272,53 @@ class _HomeScreenState extends State<HomeScreen> {
   // thousands of rows would save just what changed.
   Future<void> _saveTasks() async {
     await _taskStorage.saveTasks(tasks);
+  }
+
+  // Asks before deleting, because deleting is destructive and there is no undo.
+  Future<void> _confirmDeleteTask(Task task) async {
+    // showDialog<bool> returns a Future carrying whatever Navigator.pop was
+    // given — so the dialog can answer a question rather than just closing.
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      // Named dialogContext, not context, to make it obvious which one is being
+      // popped: the dialog's own route, not the screen underneath.
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Task?'),
+          // Naming the task is what makes the question answerable — "are you
+          // sure?" alone does not say what is about to be lost.
+          content: Text('Are you sure you want to delete "${task.title}"?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                // The second argument to pop is the value the Future returns.
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    // `!= true` rather than `== false`, because there are three answers, not
+    // two: true, false, and null — null being what comes back when the user
+    // dismisses the dialog by tapping outside it. Anything but a clear yes
+    // means do nothing.
+    if (shouldDelete != true) {
+      return;
+    }
+
+    setState(() {
+      tasks.remove(task);
+    });
+
+    await _saveTasks();
   }
 }

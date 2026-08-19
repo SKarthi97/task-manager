@@ -50,6 +50,9 @@ Every term in one place, one plain sentence each. Follow a link for the longer e
 | `showDialog` | Puts a small screen on top of the current one. | [dialogs-and-input](dialogs-and-input.md) |
 | `Navigator.pop` | Closes a dialog, or goes back a screen — the same thing. | [dialogs-and-input](dialogs-and-input.md) |
 | `pumpAndSettle` | In a test, keep drawing until animations stop. | [dialogs-and-input](dialogs-and-input.md) |
+| `showDialog<bool>` | A dialog that returns an answer, not just closes. | [dialogs-and-input](dialogs-and-input.md) |
+| `bool?` | true, false, **or null** — dismissing a dialog gives null. | [dialogs-and-input](dialogs-and-input.md) |
+| `tapAt` | Tap a screen position, e.g. the dimmed area behind a dialog. | [dialogs-and-input](dialogs-and-input.md) |
 | `Future` | A value that arrives later. | [persistence](persistence.md) |
 | `async` / `await` | Mark a function that waits; wait for a `Future`. | [persistence](persistence.md) |
 | `initState` | Runs once before the first build — where loading starts. | [persistence](persistence.md) |
