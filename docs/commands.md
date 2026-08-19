@@ -701,3 +701,34 @@ flutter test            # 56 tests passed (41 widget + 15 unit)
 One test needed a second attempt: with mock storage the load finishes almost instantly, so an extra
 `pump()` after `pumpWidget` missed the spinner completely. New concepts are in
 [concepts/persistence.md](concepts/persistence.md).
+
+## 24 — Test the storage service on its own
+
+[`test/services/task_storage_test.dart`](../task_manager/test/services/task_storage_test.dart) tests
+`TaskStorage` directly, without building a screen.
+
+```bash
+flutter test test/services/task_storage_test.dart
+```
+
+`flutter analyze` was clean and all six tests passed first time. Two more were added for behaviour the
+rest of the app quietly depends on, taking the suite to 64:
+
+| Test | Records |
+| --- | --- |
+| saving replaces the previous list rather than adding to it | one key, one value — the reason deleting a task sticks |
+| loading unreadable data throws, leaving the caller to handle it | the service reports the problem; `HomeScreen` decides what the user sees |
+
+The second one is the deliberate half of a pair. `loadTasks` does not catch its own errors, and the
+`try`/`catch` sits in the screen — because showing the empty state is a UI decision, not a storage one.
+Both halves are now pinned: this test says the error escapes, and *unreadable stored data leaves the
+app usable* says the screen absorbs it.
+
+```bash
+dart format lib test
+flutter analyze         # No issues found!
+flutter test            # 64 tests passed (41 widget + 23 unit)
+```
+
+New concepts are in
+[testing the service on its own](concepts/persistence.md#testing-the-service-on-its-own).

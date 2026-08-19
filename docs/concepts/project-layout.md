@@ -31,8 +31,10 @@ enforce — but following it means anyone can guess where a file lives.
 ```text
 test/
 ├── models/
-│   └── task_test.dart     unit tests for lib/models/task.dart
-└── widget_test.dart       widget tests for the screen
+│   └── task_test.dart          unit tests for lib/models/task.dart
+├── services/
+│   └── task_storage_test.dart  unit tests for lib/services/task_storage.dart
+└── widget_test.dart            widget tests for the screen
 ```
 
 Here the tooling *does* care about one thing: `flutter test` finds files ending in `_test.dart`. A file

@@ -220,6 +220,57 @@ expect(find.text(initialTitles.first), findsNothing);
 That is the test that proves saving works. Checking the row disappeared before the relaunch only proves
 `setState` works.
 
+### Testing the service on its own
+
+`TaskStorage` gets its own tests, separate from any screen —
+[`test/services/task_storage_test.dart`](../../task_manager/test/services/task_storage_test.dart):
+
+```dart
+late TaskStorage storage;
+
+setUp(() {
+  SharedPreferences.setMockInitialValues({});   // empty store each time
+  storage = TaskStorage();
+});
+
+test('saves and loads a task', () async {
+  await storage.saveTasks([Task(title: 'Learn persistence')]);
+
+  final loaded = await storage.loadTasks();
+
+  expect(loaded.first.title, 'Learn persistence');
+});
+```
+
+Two details worth noticing:
+
+- **Plain `test`, but `async`.** There is no screen, so no `testWidgets` and no pumping — but saving
+  and loading return `Future`s, so the test body still awaits them. Async and widgets are separate
+  concerns.
+- **`late`** means "this gets a value before anything reads it". The instance is created in `setUp`
+  rather than at the declaration, so every test gets a fresh one.
+
+The service tests can check things a widget test would strain to reach:
+
+| Test | Records |
+| --- | --- |
+| an empty list when nothing is saved | a first run is not an error |
+| order is kept across multiple tasks | a shuffled list would still pass a length check |
+| saving an empty list clears what was there | which is what makes deleting the last task stick |
+| saving replaces rather than appends | one key, one value — the reason delete works at all |
+| unreadable data **throws** | the service reports; the screen decides |
+
+That last one is the interesting one. `loadTasks` deliberately does *not* catch its own errors:
+
+```dart
+expect(storage.loadTasks(), throwsA(isA<Exception>()));
+```
+
+The `try`/`catch` lives in `HomeScreen`, because *showing the empty state* is a UI decision. A service
+that silently returned `[]` on corrupt data would hide a real problem and take that choice away. Two
+tests now pin both halves: this one says the error escapes the service, and the widget test
+*"unreadable stored data leaves the app usable"* says the screen absorbs it.
+
 ### The spinner is one frame wide
 
 ```dart

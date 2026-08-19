@@ -60,6 +60,9 @@ Every term in one place, one plain sentence each. Follow a link for the longer e
 | `jsonEncode` / `jsonDecode` | Object to text, and text back to object. | [persistence](persistence.md) |
 | `setMockInitialValues` | Fake device storage, for tests. | [persistence](persistence.md) |
 | `setUp` | Runs before every test, so tests cannot affect each other. | [persistence](persistence.md) |
+| `late` | "This gets a value before anything reads it." | [persistence](persistence.md) |
+| `throwsA` | Matcher for "this should throw". | [persistence](persistence.md) |
+| Service | A class that talks to the outside world, holding no widgets. | [persistence](persistence.md) |
 | Unit test | A test of plain Dart — no widgets, no pumping. | [testing](testing.md) |
 | `test` vs `testWidgets` | `test` for logic; `testWidgets` when there is a screen. | [testing](testing.md) |
 | `_test.dart` | The suffix `flutter test` looks for. Miss it and the file never runs. | [testing](testing.md) |

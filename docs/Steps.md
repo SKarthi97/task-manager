@@ -55,7 +55,8 @@ Source files carry only brief comments and point at the file that explains them.
 - Still to do: tasks cannot be edited, and deletion is instant with no undo.
 - An empty description is stored as `''` rather than `null`, so there are two ways to say "none" —
   see [an empty box and a missing value](concepts/dialogs-and-input.md#an-empty-box-and-a-missing-value-are-not-the-same-thing).
-- `flutter analyze` is clean and all 56 tests pass: 41 widget tests and 15 unit tests for `Task`.
+- `flutter analyze` is clean and all 64 tests pass: 41 widget tests, and 23 unit tests covering
+  `Task` and `TaskStorage`.
 - `pubspec.yaml` still carries the placeholder description `"A new Flutter project."`; its only
   runtime dependencies are `cupertino_icons` and `shared_preferences`.
 - The Android application ID is still the placeholder `com.example.task_manager`.
