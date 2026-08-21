@@ -17,7 +17,7 @@ needed following up.
 | [concepts/dart-basics.md](concepts/dart-basics.md) | Models, `?` for null, named parameters and `required` |
 | [concepts/lists.md](concepts/lists.md) | `ListView.builder`, `ListTile`, empty states, passing data down |
 | [concepts/state.md](concepts/state.md) | `StatefulWidget`, `setState`, and testing a tap |
-| [concepts/dialogs-and-input.md](concepts/dialogs-and-input.md) | Controllers, `dispose`, `showDialog`, validation, `Key`s for tests |
+| [concepts/dialogs-and-input.md](concepts/dialogs-and-input.md) | Controllers, `dispose`, dialogs that return an answer, validation, `Key`s |
 | [concepts/callbacks.md](concepts/callbacks.md) | Data down / events up, `VoidCallback`, `? :`, mutable vs `copyWith` |
 | [concepts/persistence.md](concepts/persistence.md) | Saving to the device, `Future`/`async`, `initState`, `mounted` |
 | [concepts/testing.md](concepts/testing.md) | Unit vs widget tests, finders and matchers, tests as documentation |
@@ -49,13 +49,14 @@ Source files carry only brief comments and point at the file that explains them.
   title is refused with the message *"Task title is required"*. A second, optional field captures a
   description, which appears as a second line on the row.
 - Tapping a task's checkbox ticks it off and crosses out the title; tapping again undoes it.
-- Each row has a delete button that removes that task.
+- Each row has a delete button, which asks for confirmation first — naming the task — and removes
+  it only on a clear yes.
 - Tasks are saved to the device on every change and reloaded on launch, so the list survives a
   restart. Unreadable stored data falls back to the empty state rather than crashing.
-- Still to do: tasks cannot be edited, and deletion is instant with no undo.
+- Still to do: tasks cannot be edited, and there is no undo after a confirmed delete.
 - An empty description is stored as `''` rather than `null`, so there are two ways to say "none" —
   see [an empty box and a missing value](concepts/dialogs-and-input.md#an-empty-box-and-a-missing-value-are-not-the-same-thing).
-- `flutter analyze` is clean and all 64 tests pass: 41 widget tests, and 23 unit tests covering
+- `flutter analyze` is clean and all 69 tests pass: 46 widget tests, and 23 unit tests covering
   `Task` and `TaskStorage`.
 - `pubspec.yaml` still carries the placeholder description `"A new Flutter project."`; its only
   runtime dependencies are `cupertino_icons` and `shared_preferences`.
@@ -65,8 +66,8 @@ Source files carry only brief comments and point at the file that explains them.
 
 **The app itself**
 
-1. Offer an undo after deleting, with a `SnackBar` and its `action:`. Deletion is currently instant
-   and permanent.
+1. Offer an undo after a confirmed delete, with a `SnackBar` and its `action:`. Confirming is a
+   safety net for accidents; undo is the one for changing your mind.
 2. Store an empty description as `null` rather than `''`, so "no description" has one meaning.
 3. Let a task be edited — the add dialog is most of an edit dialog already, given both fields exist.
 4. Give each task an `id`. Saving and reloading makes a new object every time, so identity-based
